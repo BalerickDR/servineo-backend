@@ -1,2 +1,0 @@
-Contiene la lógica de negocio más compleja o reutilizable, que puede ser usada por varios controladores.
-Aquí van funciones que interactúan con APIs externas, envían correos, manejan pagos, o contienen procesos intermedios entre los modelos y controladores.

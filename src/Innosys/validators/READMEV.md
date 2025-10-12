@@ -1,1 +1,0 @@
-Contiene las validaciones de entrada de datos, usadas para verificar que la información enviada por el cliente (por ejemplo, formularios o JSONs) cumpla con los formatos y reglas esperadas antes de procesarla.

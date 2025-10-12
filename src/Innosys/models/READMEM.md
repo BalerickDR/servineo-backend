@@ -1,2 +1,0 @@
-Define los modelos de datos, es decir, la estructura de las entidades que maneja el sistema.
-En proyectos con bases de datos (como MongoDB o SQL), aquí se definen los esquemas, tipos de datos y relaciones.

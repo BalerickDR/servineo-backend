@@ -1,2 +1,0 @@
-Contiene los controladores, que manejan la lógica de negocio y las respuestas a las peticiones HTTP.
-Reciben las solicitudes desde las rutas, procesan datos (a veces usando services o models) y devuelven la respuesta al cliente.
