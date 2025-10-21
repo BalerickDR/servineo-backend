@@ -4,8 +4,7 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import mongoose from "mongoose";
-import { connectDB, pingDB } from "./db";
-
+import { connectDB, pingDB } from "./db"; 
 // IMPORTA el router
 import paymentsRouter from "./routes/payments";
 import debugRouter from "./routes/debug";   // ⬅️ importa el router
@@ -39,7 +38,7 @@ app.get("/debug/db", async (_req, res) => {
   }
 });
 
-const PORT = Number(process.env.PORT || 4000);
+const PORT = Number(process.env.SERVER_PORT || process.env.PORT || 4000);
 
 // Arranque: conectar DB y escuchar
 connectDB()

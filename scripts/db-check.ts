@@ -1,13 +1,16 @@
 // scripts/db-check.ts
-import "dotenv/config";
-import mongoose from "mongoose";
+import 'dotenv/config';
+import mongoose from 'mongoose';
 
 async function main() {
   const uri = process.env.MONGODB_URI;
-  const dbName = process.env.MONGODB_DB || "servineo_fabian";
+  const dbName = process.env.MONGODB_DB;
+
+  const safeUri = (process.env.MONGODB_URI || '').replace(/:[^@]+@/, '://***:***@');
+  console.log('ENV →', { MONGODB_DB: process.env.MONGODB_DB, MONGODB_URI: safeUri });
 
   if (!uri) {
-    console.error("❌ Falta MONGODB_URI en tu .env");
+    console.error('❌ Falta MONGODB_URI en tu .env');
     process.exit(1);
   }
 
@@ -18,7 +21,7 @@ async function main() {
     await mongoose.disconnect();
     process.exit(0);
   } catch (err: any) {
-    console.error("❌ Error de conexión:", err.message);
+    console.error('❌ Error de conexión:', err.message);
     process.exit(1);
   }
 }
