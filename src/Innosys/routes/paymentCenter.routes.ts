@@ -1,14 +1,13 @@
 import { Router } from 'express';
-import { PaymentCenterController } from '../controllers/paymentCenter.controllers';
+// 1. Importa la FUNCIÓN específica, no todo el archivo con '*'.
+import { handleGetPaymentCenter } from '../controllers/paymentCenter.controllers';
 
 const router = Router();
-const paymentCenterController = new PaymentCenterController();
 
-/**
- * @route   GET /api/fixer/payment-center/:fixerId
- * @desc    Obtener información del centro de pagos del fixer
- * @access  Private (requiere autenticación del fixer)
- */
-router.get('/:fixerId', paymentCenterController.getPaymentCenterData);
+// 2. Usa la función directamente en la ruta.
+router.get(
+  '/:fixerId', 
+  handleGetPaymentCenter
+);
 
 export default router;

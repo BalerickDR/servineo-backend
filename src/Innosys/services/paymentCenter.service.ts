@@ -1,222 +1,82 @@
 import mongoose from 'mongoose';
-// import { Fixer } from '../models/Fixer'; // Descomentar cuando exista el modelo
+import Job from '../models/job.model'; 
+import Wallet from '../models/wallet.model'; 
 
 /**
- * Interface para los datos del centro de pagos
+ * Obtiene las estadísticas de trabajos "Pagado" para un Fixer.
  */
-export interface PaymentCenterData {
-  saldoActual: number;
-  totalGanado: number;
-  trabajosCompletados: number;
-  fixerId: string;
-  isTestData: boolean;
-}
+export const getPaymentCenterData = async (fixerId: string) => {
+  const fixerObjectId = new mongoose.Types.ObjectId(fixerId);
 
-/**
- * Interface para la wallet del fixer
- */
-export interface WalletUpdate {
-  success: boolean;
-  message?: string;
-  currentBalance?: number;
-}
-
-/**
- * Servicio para manejar la lógica de negocio del centro de pagos
- */
-export class PaymentCenterService {
-  
-  /**
-   * Obtener datos del fixer para el centro de pagos
-   * @param fixerId - ID del fixer
-   * @returns Datos del centro de pagos o null si no existe
-   */
-  async getFixerPaymentData(fixerId: string): Promise<PaymentCenterData | null> {
-    try {
-      // TODO: Descomentar cuando se defina la estructura de la base de datos
-      
-      // OPCIÓN 1: Si toda la información está en la colección 'fixers'
-      /*
-      const fixer = await Fixer.findOne({ 
-        _id: new mongoose.Types.ObjectId(fixerId) 
-      }).select('wallet stats');
-      
-      if (!fixer) {
-        return null;
-      }
-      
-      return {
-        saldoActual: fixer.wallet?.currentBalance || 0,
-        totalGanado: fixer.wallet?.totalEarnings || 0,
-        trabajosCompletados: fixer.stats?.completedJobs || 0,
-        fixerId: fixerId,
-        isTestData: false
-      };
-      */
-
-      // OPCIÓN 2: Si hay colecciones separadas
-      /*
-      const db = mongoose.connection.db;
-      if (!db) {
-        throw new Error('Database connection not established');
-      }
-      
-      const walletsCollection = db.collection('fixer_wallets');
-      const jobsCollection = db.collection('jobs');
-      
-      // Obtener datos de la wallet
-      const walletData = await walletsCollection.findOne({ 
-        fixerId: fixerId 
-      });
-      
-      if (!walletData) {
-        return null;
-      }
-      
-      // Contar trabajos completados
-      const completedJobs = await jobsCollection.countDocuments({
-        fixerId: fixerId,
-        status: 'completed'
-      });
-      
-      return {
-        saldoActual: walletData.currentBalance || 0,
-        totalGanado: walletData.totalEarnings || 0,
-        trabajosCompletados: completedJobs,
-        fixerId: fixerId,
-        isTestData: false
-      };
-      */
-
-      // OPCIÓN 3: Calcular todo desde jobs
-      /*
-      const db = mongoose.connection.db;
-      if (!db) {
-        throw new Error('Database connection not established');
-      }
-      
-      const jobsCollection = db.collection('jobs');
-      const walletsCollection = db.collection('fixer_wallets');
-      
-      // Verificar si el fixer existe
-      const fixerExists = await jobsCollection.findOne({ fixerId: fixerId });
-      if (!fixerExists) {
-        return null;
-      }
-      
-      // Obtener saldo actual de la wallet
-      const wallet = await walletsCollection.findOne({ fixerId: fixerId });
-      
-      // Calcular total ganado
-      const earnings = await jobsCollection.aggregate([
-        { 
-          $match: { 
-            fixerId: fixerId, 
-            status: 'completed' 
-          } 
-        },
-        { 
-          $group: { 
-            _id: null, 
-            total: { $sum: '$amount' },
-            count: { $sum: 1 }
-          } 
+  try {
+    const stats = await Job.aggregate([
+      {
+        $match: {
+          fixerId: fixerObjectId,
+          status: "Pagado"
         }
-      ]).toArray();
-      
-      const totalEarnings = earnings[0]?.total || 0;
-      const completedJobs = earnings[0]?.count || 0;
-      
-      return {
-        saldoActual: wallet?.currentBalance || 0,
-        totalGanado: totalEarnings,
-        trabajosCompletados: completedJobs,
-        fixerId: fixerId,
-        isTestData: false
-      };
-      */
-
-      // DATOS DE PRUEBA (mientras se define la estructura)
-      console.log(`[PRUEBA] Consultando datos para fixer: ${fixerId}`);
-      
-      // Simular diferentes datos según el ID para testing
-      const testData: { [key: string]: PaymentCenterData } = {
-        '123456': {
-          saldoActual: 13.00,
-          totalGanado: 15420.00,
-          trabajosCompletados: 23,
-          fixerId: fixerId,
-          isTestData: true
-        },
-        '789012': {
-          saldoActual: 250.75,
-          totalGanado: 28340.50,
-          trabajosCompletados: 45,
-          fixerId: fixerId,
-          isTestData: true
+      },
+      {
+        $group: {
+          _id: null, 
+          totalGanado: { $sum: "$price" },
+          trabajosCompletados: { $sum: 1 }
         }
-      };
-
-      // Retornar datos de prueba si existe, sino null
-      return testData[fixerId] || null;
-
-    } catch (error) {
-      console.error('Error en getFixerPaymentData:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Actualizar saldo de la wallet del fixer
-   * @param fixerId - ID del fixer
-   * @param amount - Monto a agregar/deducir
-   * @param type - Tipo de transacción: 'charge' o 'deduction'
-   * @returns Wallet actualizada
-   */
-  async updateWalletBalance(
-    fixerId: string, 
-    amount: number, 
-    type: 'charge' | 'deduction' = 'charge'
-  ): Promise<WalletUpdate> {
-    try {
-      // TODO: Implementar cuando se defina la estructura
-      /*
-      const db = mongoose.connection.db;
-      if (!db) {
-        throw new Error('Database connection not established');
       }
-      
-      const walletsCollection = db.collection('fixer_wallets');
-      
-      const operation = type === 'charge' 
-        ? { $inc: { currentBalance: amount } }
-        : { $inc: { currentBalance: -amount } };
-      
-      const result = await walletsCollection.findOneAndUpdate(
-        { fixerId: fixerId },
-        operation,
-        { returnDocument: 'after' }
-      );
-      
-      if (!result.value) {
-        throw new Error('Wallet not found');
-      }
-      
+    ]);
+
+    if (stats.length > 0) {
+      return stats[0]; 
+    } else {
       return {
-        success: true,
-        currentBalance: result.value.currentBalance
+        _id: null,
+        totalGanado: 0,
+        trabajosCompletados: 0
       };
-      */
-      
-      console.log(`[PRUEBA] Actualizar balance para ${fixerId}: ${type} ${amount}`);
-      return { 
-        success: true, 
-        message: 'Función pendiente de implementar' 
-      };
-      
-    } catch (error) {
-      console.error('Error en updateWalletBalance:', error);
-      throw error;
     }
+  } catch (error) {
+    console.error("Error al calcular estadísticas de trabajos:", error);
+    throw new Error("Error al consultar los datos de trabajos.");
   }
-}
+};
+
+
+/**
+ * NUEVA FUNCIÓN: Busca una wallet por ID de usuario, o la crea si no existe.
+ * @param userId El ID (en string) del Fixer
+ */
+export const findOrCreateWalletByUserId = async (userId: string) => {
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+
+  try {
+    // 1. Intenta encontrar la wallet
+    let wallet = await Wallet.findOne({ users_id: userObjectId });
+
+    // 2. Si la wallet existe, devuélvela
+    if (wallet) {
+      console.log(`Wallet encontrada para el usuario: ${userId}`);
+      return wallet;
+    }
+
+    // 3. Si no existe, créala con valores por defecto
+    console.log(`No se encontró wallet para ${userId}, creando una nueva...`);
+    const newWallet = new Wallet({
+      users_id: userObjectId,
+      balance: 0, // Las nuevas wallets empiezan en 0
+      currency: 'BOB',
+      status: 'active',
+      minimumBalance: 0,
+      lowBalanceThreshold: 50
+    });
+
+    // 4. Guarda la nueva wallet en la DB
+    await newWallet.save();
+    console.log(`Nueva wallet creada con ID: ${newWallet._id}`);
+    
+    return newWallet;
+
+  } catch (error) {
+    console.error("Error al buscar o crear la wallet:", error);
+    throw new Error("Error al procesar la wallet del usuario.");
+  }
+};
