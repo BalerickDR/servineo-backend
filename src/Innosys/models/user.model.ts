@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true },
     passwordHash: { type: String, default: "" },
     url_photo: { type: String, default: "" },
-    role: { type: String, enum: ["requester", "fixer"], required: true },
+    role: { type: String, enum: ["requester", "fixer", "servineo"], required: true },
     language: { type: String, default: "es" },
     stripeCustomerId: { type: String, default: "" },
   },

@@ -12,6 +12,10 @@ import CashPayRoutes from '../Innosys/routes/lab/cashpay.routes';
 import BankAccountRoutes from '../Innosys/routes/BankAccount.routes';
 import paymentsRouter from "../Innosys/routes/payments.qr";
 import PaymentCenterRoutes from '../Innosys/routes/paymentCenter.routes'; // ← NUEVO
+import walletRoutes from "../Innosys/routes/walletRoutes";
+
+//jhoel
+import bankTransferRoutes from '../Innosys/routes/bankTransferRoute';
 
 const router = Router();
 
@@ -36,6 +40,9 @@ router.use('/api', UsersRoutes);
 router.use('/api', PaymentRoutes);
 router.use('/api', BankAccountRoutes); 
 router.use('/api/lab', CashPayRoutes);
+router.use('/api', walletRoutes);
+router.use('/api/transferencia-bancaria', bankTransferRoutes); //transferencia bancaria (jhoel)
+
 
 // Rutas de Payment Center - Centro de Pagos del Fixer
 router.use('/api/fixer/payment-center', PaymentCenterRoutes); // ← NUEVO
