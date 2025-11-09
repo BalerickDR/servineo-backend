@@ -56,6 +56,6 @@ const walletSchema = new Schema<IWallet>(
 );
 
 // Creación del Modelo
-const Wallet = models.Wallet || model<IWallet>('Wallet', walletSchema);
+export const Wallet = models.Wallet || model<IWallet>('Wallet', walletSchema, 'wallets');
 
 export default Wallet;

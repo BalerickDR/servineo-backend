@@ -1,6 +1,8 @@
 import type { Request, Response } from "express";
 import mongoose from "mongoose";
 import { Payment } from "../../models/payment.model";
+import { Comision } from "../../models/historycomission.model";
+import { Wallet } from "../../models/wallet.model";
 
 const MAX_ATTEMPTS = 3;
 const LOCK_MINUTES = 10;
@@ -21,7 +23,7 @@ export async function confirmPaymentLab(req: Request, res: Response) {
       return res.status(400).json({ error: "code requerido" });
     }
 
-    // Validar formato del código (ajusta según tu formato real)
+    // Validar formato del código
     const provided = String(code).toUpperCase().trim();
     if (!/^[A-Z0-9]{4,10}$/.test(provided)) {
       return res.status(400).json({ 
@@ -148,9 +150,72 @@ export async function confirmPaymentLab(req: Request, res: Response) {
       });
     }
 
+    // ============================================
+    // 🔥 TRIGGER: CREAR COMISIÓN AUTOMÁTICAMENTE
+    // ============================================
+    console.log(`💰 Activando trigger de comisión para pago ${id}`);
+    
+    try {
+      // Buscar la wallet del fixer
+      const fixerWallet = await Wallet.findOne({ 
+        users_id: confirmed.fixerId 
+      }).session(session);
+
+      if (!fixerWallet) {
+        console.warn(`❌ No se encontró wallet para fixer: ${confirmed.fixerId}`);
+        // Continuamos igual, pero la comisión quedará como fallida
+      }
+
+      // Calcular comisión (10% por defecto)
+      const comisionRate = confirmed.commissionRate || 0.1;
+      const montoServicio = confirmed.amount?.total || confirmed.amount;
+      const comisionMonto = montoServicio * comisionRate;
+
+      // Verificar si el fixer tiene fondos suficientes para la comisión
+      let estadoComision = "completada";
+      let motivoFallo = null;
+
+      if (fixerWallet && fixerWallet.balance >= comisionMonto) {
+        // ✅ Tiene fondos - restar comisión del wallet
+        await Wallet.findByIdAndUpdate(
+          fixerWallet._id,
+          { $inc: { balance: -comisionMonto } },
+          { session }
+        );
+        console.log(`✅ Comisión de ${comisionMonto} Bs descontada del wallet`);
+      } else {
+        // ❌ No tiene fondos - marcar comisión como fallida
+        estadoComision = "fallida";
+        motivoFallo = fixerWallet 
+          ? `Fondos insuficientes: ${fixerWallet.balance} Bs < ${comisionMonto} Bs`
+          : "Wallet del fixer no encontrado";
+        console.warn(`❌ ${motivoFallo}`);
+      }
+
+      // Crear registro de comisión en el historial
+      await Comision.create([{
+        wallets_id: fixerWallet?._id || confirmed.fixerId,
+        payments_id: confirmed._id,
+        fixer_id: confirmed.fixerId,
+        comision: comisionMonto,
+        monto_servicio: montoServicio,
+        tipo_servicio: "Servicio general", // Puedes ajustar esto
+        estado: estadoComision,
+        motivo_fallo: motivoFallo,
+        fecha_completada: estadoComision === "completada" ? new Date() : undefined
+      }], { session });
+
+      console.log(`✅ Comisión registrada en historial: ${estadoComision}`);
+
+    } catch (error: any) {
+      console.error("❌ Error en trigger de comisión:", error);
+      // NO abortamos la transacción principal por error en comisión
+      // El pago ya se confirmó, la comisión es secundaria
+    }
+
     await session.commitTransaction();
 
-    console.info(`Payment ${id}: confirmado exitosamente`);
+    console.info(`Payment ${id}: confirmado exitosamente + trigger comisión ejecutado`);
 
     return res.json({
       message: "pago confirmado exitosamente",
@@ -158,7 +223,8 @@ export async function confirmPaymentLab(req: Request, res: Response) {
         id: String(confirmed._id),
         total: confirmed.amount.total,
         status: confirmed.status,
-        paidAt: confirmed.paymentDate
+        paidAt: confirmed.paymentDate,
+        comisionProcesada: true // ← Indicar que se ejecutó el trigger
       }
     });
 

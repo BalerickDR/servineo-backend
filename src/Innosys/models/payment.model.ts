@@ -25,9 +25,11 @@ interface Amount {
   currency: "BOB" | "USD" | string;
 }
 
+
 export interface PaymentDoc extends mongoose.Document {
   jobId: Types.ObjectId;
   payerId: Types.ObjectId;
+  fixerId: Types.ObjectId;
   paymentMethods: PaymentMethod;
   status: PaymentStatus;
   paymentDate: Date;
@@ -69,6 +71,7 @@ const PaymentSchema = new Schema<PaymentDoc>(
   {
     jobId:            { type: Schema.Types.ObjectId, ref: "Job", required: true, index: true },
     payerId:          { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    fixerId:         { type: Schema.Types.ObjectId, ref: "User", required: true },
     paymentMethods:   { type: String, enum: ["QR", "card", "cash"], required: true },
     status:           { type: String, enum: ["paid", "pending", "failed"], required: true, index: true },
     paymentDate:      { type: Date, required: true, default: () => new Date(), index: true },
