@@ -7,7 +7,7 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true },
     passwordHash: { type: String, default: "" },
     url_photo: { type: String, default: "" },
-    role: { type: String, enum: ["requester", "fixer", "servineo"], required: true },
+    role: { type: String, enum: ["requester", "fixer"], required: true },
     language: { type: String, default: "es" },
     stripeCustomerId: { type: String, default: "" },
   },
@@ -15,5 +15,4 @@ const userSchema = new mongoose.Schema(
 );
 
 // ⚙️ Usa exactamente la colección 'userpay'
-//export default mongoose.model("userpay", userSchema, "userpay");
-export default mongoose.model("User", userSchema, "users");//pa trabajar con los users de verdad, si esta en contra eliminen esto
+export default mongoose.model("userpay", userSchema, "userpay");

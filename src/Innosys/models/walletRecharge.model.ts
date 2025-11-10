@@ -10,6 +10,12 @@ export interface WalletRechargeDoc extends mongoose.Document {
   status: RechargeStatus;
   amount: number;
   currency: string;
+
+  // Nuevos campos Stripe:
+  paymentIntentId?: string;    // ID del PaymentIntent en Stripe
+  paymentMethodId?: string;    // ID del método de pago usado (opcional)
+  stripeChargeId?: string;     // ID del cargo Stripe (charge), opcional
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,6 +29,12 @@ const WalletRechargeSchema = new Schema<WalletRechargeDoc>(
     status: { type: String, enum: ['pending', 'confirmed', 'failed'], default: 'pending' },
     amount: { type: Number, required: true, min: 0 },
     currency: { type: String, required: true, default: 'BOB' },
+
+    // Campos para datos Stripe
+    paymentIntentId: { type: String, index: true },    // para buscar por este campo
+    paymentMethodId: { type: String },
+    stripeChargeId: { type: String },
+
   },
   { timestamps: true, versionKey: false },
 );
@@ -31,6 +43,7 @@ const WalletRechargeSchema = new Schema<WalletRechargeDoc>(
 WalletRechargeSchema.index({ fixerId: 1, createdAt: -1 });
 WalletRechargeSchema.index({ walletId: 1 });
 WalletRechargeSchema.index({ status: 1 });
+WalletRechargeSchema.index({ paymentIntentId: 1 }); // índice para buscar por paymentIntentId
 
 export const WalletRecharge =
   mongoose.models.WalletRecharge ||

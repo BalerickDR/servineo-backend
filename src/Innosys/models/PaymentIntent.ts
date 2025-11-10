@@ -37,7 +37,7 @@ const PaymentIntentSchema = new Schema({
   method: {
     type: String,
     enum: ['qr', 'transfer', 'card'],
-    default: 'card',
+    default: 'qr',
   },
   //
 });

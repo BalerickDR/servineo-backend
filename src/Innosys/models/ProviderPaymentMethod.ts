@@ -7,7 +7,7 @@ const ProviderPaymentMethodSchema = new Schema(
       type: String, 
       enum: ['qr', 'transfer', 'card'], 
       required: true, 
-      default: 'card' 
+      default: 'qr' 
     },
     qrImageUrl: { type: String, required: false }, // enlace al QR (Drive u otro)
     accountDisplay: { type: String, required: true }, // “Banco · Titular · ****”

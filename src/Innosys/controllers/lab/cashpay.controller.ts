@@ -174,3 +174,47 @@ export const createPaymentLab = async (req: Request, res: Response) => {
     });
   }
 }
+
+//jhoel
+// ============================================
+// POST /lab/payments/:id/regenerate-code - Regenerar código de pago
+// ============================================
+export const regeneratePaymentCode = async (req: Request, res: Response) => {
+  console.log("[regeneratePaymentCode] Iniciando proceso...");
+
+  try {
+    const paymentId = req.params.id;
+
+    if (!mongoose.isValidObjectId(paymentId)) {
+      return res.status(400).json({ error: "ID de pago inválido" });
+    }
+
+    const payment = await Payment.findById(paymentId);
+    if (!payment) {
+      return res.status(404).json({ error: "Pago no encontrado" });
+    }
+
+    // Generar nuevo código y actualizar expiración
+    const newCode = generateRandomCode(6);
+    const newExpiresAt = new Date(Date.now() + CODE_EXPIRATION_MS);
+
+    payment.code = newCode;
+    payment.codeExpiresAt = newExpiresAt;
+
+    await payment.save();
+
+    console.log(`✅ Código regenerado exitosamente para pago ${paymentId}`);
+
+    return res.status(200).json({
+      message: "Código regenerado exitosamente",
+      data: {
+        code: newCode,
+        expiresAt: newExpiresAt,
+      },
+    });
+
+  } catch (e: any) {
+    console.error("❌ Error en regeneratePaymentCode:", e);
+    return res.status(500).json({ error: e?.message || "Error regenerando código" });
+  }
+};
