@@ -53,17 +53,18 @@ router.use('/api', UsersRoutes);
 router.use('/api', PaymentRoutes);
 router.use('/api', BankAccountRoutes); 
 router.use('/api/lab', CashPayRoutes);
-<<<<<<< HEAD
+
 router.use('/api/transferencia-bancaria', bankTransferRoutes); //transferencia bancaria (jhoel)
 router.use('/api', walletRoutes);
-=======
+
+
 //ruta para traer trabajos
 router.use('/api', jobsRoutes); 
 
 // 🟢 [MONTAJE CRÍTICO FUSIONADO] Usamos TU router (invoiceDetailRouter)
 // Montamos TU router de detalle bajo el prefijo exacto: /api/v1/invoices
 router.use('/api/v1/invoices', invoiceDetailRouter); 
->>>>>>> origin/CentroPagos
+
 
 
 // Rutas de Payment Center - Centro de Pagos del Fixer
