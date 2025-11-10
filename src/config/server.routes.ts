@@ -12,7 +12,7 @@ import CashPayRoutes from '../Innosys/routes/lab/cashpay.routes';
 import BankAccountRoutes from '../Innosys/routes/BankAccount.routes';
 import paymentsRouter from "../Innosys/routes/payments.qr";
 import PaymentCenterRoutes from '../Innosys/routes/paymentCenter.routes'; 
-
+import jobsRoutes from '../Innosys/routes/jobs.routes'; 
 // [CORRECCIÓN/VERIFICACIÓN CRÍTICA] 1. Importación de Rutas de Facturas
 // Se asume que el archivo es 'invoicelist.routes.ts' y la ruta es correcta.
 import InvoiceListRoutes from '../Innosys/routes/invoicelist.routes'; 
@@ -49,7 +49,8 @@ router.use('/api', UsersRoutes);
 router.use('/api', PaymentRoutes);
 router.use('/api', BankAccountRoutes); 
 router.use('/api/lab', CashPayRoutes);
-
+//ruta para traer trabajos
+router.use('/api', jobsRoutes); 
 
 // 🟢 [MONTAJE CRÍTICO] 2. Montaje de Rutas de Facturas
 // Montamos el router de facturas bajo el prefijo exacto que necesita el Frontend: /api/v1/invoices

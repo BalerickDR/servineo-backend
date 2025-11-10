@@ -17,13 +17,13 @@ export const createCard = async (req, res) => {
   try {
     const { userId, paymentMethodId, saveCard , cardholderName} = req.body;
 
-    // 1️⃣ Buscar usuario en MongoDB
+    // ⿡ Buscar usuario en MongoDB
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ error: "User not found" });
 
     let customerId = user.stripeCustomerId;
 
-    // 2️⃣ Validar o crear Customer en Stripe
+    // ⿢ Validar o crear Customer en Stripe
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: user.email,
@@ -50,12 +50,12 @@ export const createCard = async (req, res) => {
       }
     }
 
-    // 3️⃣ Adjuntar PaymentMethod al Customer
+    // ⿣ Adjuntar PaymentMethod al Customer
     const paymentMethod = await stripe.paymentMethods.attach(paymentMethodId, {
       customer: customerId,
     });
 
-    // 4️⃣ Guardar como default y registrar en MongoDB si se desea
+    // ⿤ Guardar como default y registrar en MongoDB si se desea
     if (saveCard) {
       await stripe.customers.update(customerId, {
         invoice_settings: { default_payment_method: paymentMethod.id },
@@ -75,7 +75,7 @@ export const createCard = async (req, res) => {
       return res.json(newCard);
     }
 
-    // 5️⃣ Retornar mensaje si no se guardó
+    // ⿥ Retornar mensaje si no se guardó
     res.json({ message: "Tarjeta agregada para pago, no guardada" });
 
   } catch (error) {
@@ -94,6 +94,6 @@ export const listCards = async (req, res) => {
     res.json(cards);
   } catch (error) {
     console.error("Error listCards:", error);
-    res.status(500).json({ error: (error as Error).message });
-  }
+    res.status(500).json({ error: (error as Error).message });
+  }
 };
