@@ -8,13 +8,13 @@ import PaymentRoutes from "../Innosys/routes/payment.routes";
 import CashPayRoutes from '../Innosys/routes/lab/cashpay.routes';
 import BankAccountRoutes from '../Innosys/routes/BankAccount.routes';
 import paymentsRouter from "../Innosys/routes/payments.qr";
-<<<<<<< HEAD
+
 import PaymentCenterRoutes from '../Innosys/routes/paymentCenter.routes'; // ← NUEVO
 import walletRoutes from "../Innosys/routes/walletRoutes";
 
 //jhoel
 import bankTransferRoutes from '../Innosys/routes/bankTransferRoute';
-=======
+
 import PaymentCenterRoutes from '../Innosys/routes/paymentCenter.routes'; 
 import jobsRoutes from '../Innosys/routes/jobs.routes'; 
 import invoiceDetailRouter from '../Innosys/routes/invoiceRoutes'; 
@@ -27,7 +27,7 @@ import { FEATURE_SIM_PAYMENTS } from './featureFlags';
 import { simPaymentsRouter } from '../routes/sim-payments';
 import { FEATURE_NOTIFICATIONS } from './featureFlags';
 console.log('FEATURE_NOTIFICATIONS =', FEATURE_NOTIFICATIONS);
->>>>>>> origin/CentroPagos
+
 
 const router = Router();
 
