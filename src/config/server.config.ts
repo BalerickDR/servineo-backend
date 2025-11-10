@@ -16,14 +16,16 @@ const app = express();
 // --- MIDDLEWARES ---
 
 // ===================================================
-// [CAMBIO PARA DESPLIEGUE EN VERCEL]
+// [INTEGRACIÓN DE LÓGICA CORS DEL EQUIPO PARA VERCEL]
 // ===================================================
 
 // 1. Define tu lista de orígenes permitidos
 const allowedOrigins = [
-  'http://localhost:3000',                   // Tu frontend de desarrollo
-  'https://servineo-frontend-blush.vercel.app',    // <-- ¡TU URL DE VERCEL! (Reemplaza si es diferente)
-  'https://servineo-frontend-git-dev-diego-revollos-projects.vercel.app'
+  'http://localhost:3000',                   // Tu frontend de desarrollo
+  'https://servineo-frontend-blush.vercel.app',    // <-- ¡TU URL DE VERCEL! (Reemplaza si es diferente)
+  'https://servineo-frontend-git-dev-diego-revollos-projects.vercel.app',
+  'https://servineo-frontend-git-centropagos-diego-revollos.vercel.app',
+  'https://servineo-frontend-azbznu1q9-diego-revollos-projects.vercel.app'
 ];
 
 app.use(
@@ -41,8 +43,9 @@ app.use(
     credentials: true,
   })
 );
+
 // ===================================================
-// [FIN DEL CAMBIO]
+// [FIN DE INTEGRACIÓN CORS]
 // ===================================================
 
 app.use(express.json());
@@ -52,6 +55,7 @@ app.use(express.json());
 
 app.use('/api/payments', paymentsRouter); 
 
+// La ruta de facturación que tienes en tu archivo
 app.use('/api/v1/invoices', invoiceRoutes);
 
 // Rutas generales
@@ -60,7 +64,7 @@ app.use('/api', AppRoutes);
 
 
 // ===================================================
-// LÓGICA DE ARRANQUE (MOVIDA DE index.ts)
+// LÓGICA DE ARRANQUE 
 // ===================================================
 
 async function startApp() {
