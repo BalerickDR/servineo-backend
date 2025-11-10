@@ -1,20 +1,16 @@
-// src/config/server.routes.ts (o tu index.ts principal)
-import express from "express";
-import cors from "cors";
+// ============================================
+// ARCHIVO: src/Innosys/routes/invoice.routes.ts
+// Propósito: Definir solo las rutas específicas del módulo de facturas.
+// ============================================
 
-const app = express();
+import { Router } from 'express';
+// La ruta es relativa a routes/, por eso usamos ../controllers
+import { getInvoiceDetail } from '../controllers/invoice.controller'; 
 
-app.use(express.json());
-app.use(
-  cors({
-    origin: ["http://localhost:3000"], // tu frontend
-    methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
-    credentials: true,
-  })
-);
+const router: Router = Router();
 
-// monta tus rutas lab
-import cashpayRoutes from "../../Innosys/routes/lab/cashpay.routes";
-app.use("/api/lab", cashpayRoutes);
+// Define la ruta específica: /invoices/:id
+// NOTA: No lleva /api/v1/ aquí, solo el sufijo.
+router.get('/invoices/:id', getInvoiceDetail);
 
-export default app;
+export default router;
