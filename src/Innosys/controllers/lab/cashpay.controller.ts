@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { Payment } from "../../models/payment.model";
-import User from "../../models/user.model";
+import Users from "../../models/users.model";
+import UserPay from "../../models/user.model";
 
 
-const CODE_EXPIRATION_MS = 1 * 60 * 60 * 1000;
+const CODE_EXPIRATION_MS = 48 * 60 * 60 * 1000;
 
 // ============================================
 // HELPER: Generar código aleatorio
@@ -50,16 +51,16 @@ export const createPaymentLab = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "fixerId requerido y válido" });
     }
 
-    // ===== VERIFICAR QUE LOS USUARIOS EXISTAN EN 'users' O 'userpay' =====
+    // ===== VERIFICAR QUE LOS USUARIOS EXISTAN EN 'userpay' O 'users' =====
     let [requester, fixer] = await Promise.all([
-      User.findById(requesterId),
-      User.findById(fixerId),
+      UserPay.findById(requesterId),
+      UserPay.findById(fixerId),
     ]);
 
     if (!requester || !fixer) {
       const [requesterAlt, fixerAlt] = await Promise.all([
-        User.findById(requesterId),
-        User.findById(fixerId),
+        Users.findById(requesterId),
+        Users.findById(fixerId),
       ]);
 
       requester = requester || (requesterAlt as any);
