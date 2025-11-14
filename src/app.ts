@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-
 import HealthRoutes from './api/routes/health.routes';
 import jobOfertRoutes from './api/routes/jobOfert.routes';
 import newoffersRoutes from './api/routes/newOffers.routes';
