@@ -71,7 +71,7 @@ export const createPaymentLab = async (req: Request, res: Response) => {
     // ==========================================================
     // --- LÓGICA DE CONTROL DE DUPLICADOS ---
     // ==========================================================
-    if (method === "cash") {
+    if (paymentMethods === "cash") {
       console.log(`[createPaymentLab] Buscando pago en efectivo PENDIENTE para jobId: ${jobId}`);
       
       const existingPendingPayment = await Payment.findOne({
