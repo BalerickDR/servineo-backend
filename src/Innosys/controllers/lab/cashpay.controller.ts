@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { Payment } from "../../models/payment.model";
-import User from "../../models/user.model"; 
-import Jobspay from "../../models/jobs.model";
+import User from "../../models/user.model";
+import Jobspay from "../../models/jobs.model"; 
 
 const CODE_EXPIRATION_MS = 1 * 60 * 60 * 1000;
 
@@ -66,12 +66,57 @@ export const createPaymentLab = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "El receptor debe tener rol 'fixer'" });
     }
 
-    // ... (Validaciones de montos, método, total, etc. ... todo eso está bien) ...
+    // ===== VALIDAR MONTOS =====
+    const nSub = Number(subTotal);
+    const nFee = Number(service_fee);
+    const nDisc = Number(discount);
+
+    if ([nSub, nFee, nDisc].some(Number.isNaN)) {
+      return res.status(400).json({ 
+        error: "subTotal, service_fee y discount deben ser numéricos" 
+      });
+    }
+    // ... (otras validaciones de montos) ...
+
+    const nComm = Number(commissionRate);
+    if (Number.isNaN(nComm) || nComm < 0 || nComm > 1) {
+      return res.status(400).json({ 
+        error: "commissionRate debe estar entre 0 y 1" 
+      });
+    }
+
+    // ===== VALIDAR MÉTODO DE PAGO =====
+    const method = paymentMethods.toLowerCase();
+    if (!["cash", "qr", "card"].includes(method)) {
+      return res.status(400).json({ 
+        error: "paymentMethods debe ser: cash, qr o card" 
+      });
+    }
+
+    // ============================================
+    // --- CORRECCIÓN: 'total' calculado ANTES de usarse
+    // ============================================
+    const total = nSub + nFee - nDisc;
+
+    if (total <= 0) {
+      return res.status(400).json({ 
+        error: "El total debe ser mayor a 0" 
+      });
+    }
+
+    // ===== VALIDACIÓN ESPECÍFICA PARA EFECTIVO =====
+    // (Ahora 'total' sí existe)
+    if (method === "cash" && (total < 10 || total >= 5000)) {
+      return res.status(400).json({ 
+        error: "Pago en efectivo solo entre 10 y 5000 Bs." 
+      });
+    }
+    // --- FIN DE LA CORRECCIÓN ---
 
     // ==========================================================
     // --- LÓGICA DE CONTROL DE DUPLICADOS ---
     // ==========================================================
-    if (paymentMethods === "cash") {
+    if (method === "cash") {
       console.log(`[createPaymentLab] Buscando pago en efectivo PENDIENTE para jobId: ${jobId}`);
       
       const existingPendingPayment = await Payment.findOne({
@@ -138,7 +183,7 @@ export const createPaymentLab = async (req: Request, res: Response) => {
       );
       console.log(`[createPaymentLab] ✅ 'jobspays' actualizado.`);
     } catch (jobError: any) {
-      console.error("❌ Error al actualizar 'jobspAYS' en createPaymentLab:", jobError.message);
+      console.error("❌ Error al actualizar 'jobspays' en createPaymentLab:", jobError.message);
     }
     // ============================================
     // --- FIN DE LA LÓGICA AÑADIDA ---
@@ -161,7 +206,13 @@ export const createPaymentLab = async (req: Request, res: Response) => {
 
   } catch (e: any) {
     console.error("❌ Error en createPaymentLab:", e);
-    // ... (Manejo de errores) ...
+
+    if (e?.name === "ValidationError") {
+      return res.status(400).json({ error: e.message });
+    }
+    if (e?.name === "CastError") {
+      return res.status(400).json({ error: "ObjectId inválido" });
+    }
     return res.status(500).json({ 
       error: e?.message || "Error creando pago" 
     });
@@ -208,7 +259,13 @@ export const regeneratePaymentCode = async (req: Request, res: Response) => {
       },
     });
   } catch (e: any) {
-    // ... (Manejo de errores) ...
+    if (e?.name === "ValidationError") {
+      return res.status(400).json({ error: e.message });
+    }
+    if (e?.code === 11000) {
+      // Colisión de código único
+      return res.status(409).json({ error: "conflicto de código, intente nuevamente" });
+    }
     return res.status(500).json({ error: e?.message || "Error regenerando código" });
   }
 }
