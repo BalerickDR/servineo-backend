@@ -6,7 +6,6 @@ import { Wallet } from "../../models/wallet.model";
 import Job from "../../models/job.model"; 
 import User from "../../models/user.model"; 
 import Jobspay from "../../models/jobs.model"; 
-
 const MAX_ATTEMPTS = 3;
 const LOCK_MINUTES = 10;
 
