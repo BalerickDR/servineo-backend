@@ -44,9 +44,7 @@ lerna-debug.log*
 # DB - local by docker
 database/*
 database-pg/*
-.env.local
 
 # environment
 .env*
 !.env.example
-.vercel
