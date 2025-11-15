@@ -62,23 +62,6 @@ export const regeneratePaymentCodeByJob = async (req: Request, res: Response) =>
       });
     }
 
-    // Verificar si hay un bloqueo activo
-    const now = new Date();
-    if (payment.lockUntil && payment.lockUntil.getTime() > now.getTime()) {
-      await session.abortTransaction();
-      const msLeft = payment.lockUntil.getTime() - now.getTime();
-      const waitMinutes = Math.ceil(msLeft / 60000);
-      
-      console.warn(`Payment ${payment._id}: regeneración bloqueada por intentos fallidos`);
-      
-      return res.status(429).json({
-        error: "El pago está bloqueado por intentos fallidos",
-        message: `Espera ${waitMinutes} minuto(s) antes de regenerar el código`,
-        waitMinutes,
-        unlocksAt: payment.lockUntil
-      });
-    }
-
     // Intentar generar un código único (máximo 10 intentos)
     let newCode: string | null = null;
     let attempts = 0;
