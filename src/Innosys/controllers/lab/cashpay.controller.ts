@@ -4,7 +4,7 @@ import { Payment } from "../../models/payment.model";
 import User from "../../models/user.model";
 import Jobspay from "../../models/jobs.model"; 
 
-const CODE_EXPIRATION_MS = 1 * 60 * 60 * 1000;
+const CODE_EXPIRATION_MS = 48 * 60 * 60 * 1000;
 
 // ============================================
 // HELPER: Generar código aleatorio
@@ -179,7 +179,7 @@ export const createPaymentLab = async (req: Request, res: Response) => {
       console.log(`[createPaymentLab] Actualizando 'jobspays' a Pendiente para jobId: ${jobId}`);
       await Jobspay.findByIdAndUpdate(
         jobId,
-        { $set: { status: "Pendiente" } } // Asegúrate que 'Pendiente' sea un valor válido
+        { $set: { status: "pago pendiente" } } // Asegúrate que 'Pendiente' sea un valor válido
       );
       console.log(`[createPaymentLab] ✅ 'jobspays' actualizado.`);
     } catch (jobError: any) {
