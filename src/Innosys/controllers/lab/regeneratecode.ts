@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 import { Payment } from "../../models/payment.model";
 import crypto from "crypto";
 
-const CODE_EXPIRATION_MS = 48 * 60 * 60 * 1000; // 48 horas
+const CODE_EXPIRATION_MS = 24 * 60 * 60 * 1000; // 48 horas
 
 // ============================================
 // HELPER: Generar código alfanumérico seguro

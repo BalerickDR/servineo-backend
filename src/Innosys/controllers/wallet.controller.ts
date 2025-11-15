@@ -61,7 +61,7 @@ export const rechargeWallet = async (req, res) => {
       metadata: { userId: user._id.toString() },
     });
     console.log('✅ PaymentIntent creado:', paymentIntent.id);
-
+  console.log('wallet balance************:', wallet.balance);
     // 4️⃣ Actualizar balance
     wallet.balance += amountNumber;
     await wallet.save();
