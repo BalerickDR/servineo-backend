@@ -1,41 +1,45 @@
+// src/Innosys/controllers/paymentCenter.controllers.ts
 import { Request, Response } from 'express';
-import * as paymentCenterService from '../services/paymentCenter.service';
 import mongoose from 'mongoose';
+import * as PaymentService from '../services/paymentCenter.service';
 
 /**
- * Obtiene los datos del centro de pagos (Stats de Jobs Y Saldo de Wallet).
+ * Obtiene TODOS los datos del dashboard del fixer:
+ * 1. Estadísticas (Total Ganado, Trabajos Completados)
+ * 2. Saldo de Wallet
+ * 3. Historial de Transacciones (Comisiones y Recargas)
  */
-export const handleGetPaymentCenter = async (req: Request, res: Response) => {
+export const getPaymentCenterDashboard = async (req: Request, res: Response) => {
   try {
     const { fixerId } = req.params;
 
-    // Validación del ID
+    // 1. Validación del ID (del controlador 'handleGetPaymentCenter' antiguo)
     if (!fixerId || !mongoose.Types.ObjectId.isValid(fixerId)) {
       return res.status(400).json({ success: false, error: "ID de Fixer inválido." });
     }
 
-    // Ejecuta ambas consultas en paralelo para mayor eficiencia
-    const [jobStats, wallet] = await Promise.all([
-      paymentCenterService.getPaymentCenterData(fixerId),
-      paymentCenterService.findOrCreateWalletByUserId(fixerId)
+    // 2. Ejecuta todas las consultas en paralelo para máxima eficiencia
+    const [jobStats, wallet, allTransactions] = await Promise.all([
+      PaymentService.getPaymentCenterData(fixerId),
+      PaymentService.findOrCreateWalletByUserId(fixerId),
+      PaymentService.getAllTransactions(fixerId)
     ]);
 
-    // Combina los resultados de ambas consultas
+    // 3. Combina y devuelve todos los resultados
     res.status(200).json({
       success: true,
       data: {
-        saldoActual: wallet.balance, // <-- Dato de la Wallet
-        totalGanado: jobStats.totalGanado, // <-- Dato de Jobs
-        trabajosCompletados: jobStats.trabajosCompletados, // <-- Dato de Jobs
-        fixerId: fixerId,
+        saldoActual: wallet.balance,
+        totalGanado: jobStats.totalGanado,
+        trabajosCompletados: jobStats.trabajosCompletados,
+        transactions: allTransactions, // <-- ¡Ahora sí se incluyen las transacciones!
       }
     });
 
-  } catch (error) {
-    if (error instanceof Error) {
-      res.status(500).json({ success: false, error: error.message });
-    } else {
-      res.status(500).json({ success: false, error: 'Error desconocido en el servidor.' });
-    }
+  } catch (error: any) {
+     res.status(500).json({ success: false, error: error.message });
   }
-};
+}
+
+// (La función 'handleGetPaymentCenter' antigua ha sido eliminada 
+//  porque 'getPaymentCenterDashboard' ahora hace su trabajo)

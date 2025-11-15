@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
-// --- CAMBIO: Importa el modelo 'Payment' ---
 import { Payment } from '../models/payment.model'; 
 import { Wallet } from '../models/wallet.model';
-// Ya no necesitamos 'Job' o 'Jobspay' aquí
+import { Comision } from '../models/historycomission.model';
+import Recharge from '../models/walletRecharge';
 
 /**
  * Obtiene las estadísticas de trabajos "Pagado" para un Fixer
@@ -87,5 +87,54 @@ export const findOrCreateWalletByUserId = async (userId: string) => {
   } catch (error) {
     console.error("Error al buscar o crear la wallet:", error);
     throw new Error("Error al procesar la wallet del usuario.");
+  }
+};
+
+export const getAllTransactions = async (fixerId: string) => {
+  const fixerObjectId = new mongoose.Types.ObjectId(fixerId);
+
+  try {
+    // 1. Buscar la wallet primero
+    const wallet = await Wallet.findOne({ users_id: fixerObjectId }).select('_id').lean();
+    
+    let recargas = [];
+    if (wallet) {
+      recargas = await Recharge.find({ walletId: wallet._id })
+        .sort({ createdAt: -1 })
+        .lean();
+    }
+
+    // 2. Buscar las comisiones
+    const comisiones = await Comision.find({ fixer_id: fixerObjectId })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // 3. Mapear y dar formato a los datos
+    const mappedRecargas = recargas.map(r => ({
+      _id: r._id.toString(),
+      type: 'deposit', // 'deposit' para que coincida con tus filtros
+      amount: r.amount, 
+      description: 'Recarga de Saldo', // Puedes hacerlo más específico
+      createdAt: r.createdAt.toISOString(),
+    }));
+
+    const mappedComisiones = comisiones.map(c => ({
+      _id: c._id.toString(),
+      type: 'commission', // 'commission' para que coincida con tus filtros
+      amount: -c.comision, // Es un egreso (negativo)
+      description: `Comisión - Trabajo #${c.payments_id.toString().slice(-6)}`,
+      jobId: c.payments_id.toString(),
+      createdAt: c.createdAt.toISOString(),
+    }));
+
+    // 4. Combinar y ordenar
+    const allMovements = [...mappedRecargas, ...mappedComisiones];
+    allMovements.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    return allMovements;
+
+  } catch (error) {
+    console.error("Error al obtener transacciones:", error);
+    throw new Error("Error al consultar movimientos.");
   }
 };
