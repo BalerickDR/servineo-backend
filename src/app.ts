@@ -42,6 +42,7 @@ import bankTransferRoutes from './api/routes/bankTransfer.routes';
 import CashpayLabRoutes from './api/routes/cashpay.routes';
 import  rechargeWallet  from './api/routes/wallet.routes';
 
+import PaymentsQRRoutes from "./api/routes/paymentsQR.routes";
 // (Puedes añadir el resto de rutas de pagos aquí si las necesitas: CashPay, Wallet, etc.)
 
 const app = express();
@@ -105,6 +106,7 @@ app.use('/api/transferencia-bancaria', bankTransferRoutes);
 
 //fixerwallet
 app.use("/api", rechargeWallet);
+app.use('/api/payments', PaymentsQRRoutes);
 
 export const registerRoutes = (app: any) => {
   app.use('/devices', deviceRouter);

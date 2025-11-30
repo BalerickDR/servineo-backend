@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import HealthRoutes from '../api/routes/health.routes';
-
 import AuthRoutes from '../api/routes/userManagement/auth.routes';
 
 
