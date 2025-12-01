@@ -22,9 +22,6 @@ export const connectDatabase = async (): Promise<void> => {
   } catch (error) {
     isConnected = false;
     console.error('❌ Error conectando a MongoDB:');
-    if (error instanceof Error) {
-      console.error('Message:', error.message);
-    }
     throw error;
   }
 };
@@ -44,5 +41,3 @@ process.on('SIGINT', async () => {
   console.log('🔌 Conexión MongoDB cerrada por terminación de app');
   process.exit(0);
 });
-
-//crear afuera un archivo llamado test-conn para verificacion de la conexion con la bd

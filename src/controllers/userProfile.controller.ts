@@ -1,134 +1,58 @@
-
-//src/controllers/userProfile.controller.ts
-import { User } from '../models/user.model';
+import userProfileModel, { IUserProfile } from '../models/userProfile.model';
 import { Request, Response } from 'express';
-import type { IUserProfile } from '../types/job-offer'; // ← Ruta correcta en backend
+import { User } from '../models/user.model';
 
+/**
+ * Crea un nuevo UserProfile
+ */
+export const createUserProfile = async (
+  req: Request<{}, {}, IUserProfile>,
+  res: Response<IUserProfile | { error: string }>
+) => {
+  try {
+    const userProfile = new userProfileModel(req.body);
+    await userProfile.save();
+    res.status(201).json(userProfile);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+};
 
-export const getUserProfileById = async (req: Request, res: Response) => {
+/**
+ * Obtiene todos los UserProfiles
+ */
+export const getUserProfiles = async (
+  _req: Request,
+  res: Response<IUserProfile[] | { error: string }>
+) => {
+  try {
+    const profiles = await userProfileModel.find();
+    res.json(profiles);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const getUserById = async (
+  req: Request<{ id: string }>,
+  res: Response<IUserProfile | { error: string }>
+) => {
   try {
     const { id } = req.params;
-    const user = await User.findById(id).select('-password -__v');
 
-    if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+    // Buscar por el id que se guarda en user.id durante el registro
+    const userProfile = await userProfileModel.findOne({ 'user.id': id });
+
+    if (!userProfile) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    if (user.role !== 'fixer') {
-      return res.status(400).json({ message: 'El usuario no es un fixer' });
-    }
-
-    const response: IUserProfile = {
-      user: {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        phone: user.phone || '',
-        role: user.role,
-        urlPhoto: user.fixerProfile?.photoUrl,
-      },
-      profile: {
-        ci: user.fixerProfile?.ci || '',
-        photoUrl: user.fixerProfile?.photoUrl,
-        location: user.fixerProfile?.location
-          ? {
-              lat: user.fixerProfile.location.lat,
-              lng: user.fixerProfile.location.lng,
-              address: undefined,
-            }
-          : null,
-        services: (user.fixerProfile?.services || []).map((svcId: string) => ({
-          id: svcId,
-          name: svcId
-            .replace('svc-', '')
-            .replace('-', ' ')
-            .replace(/\b\w/g, (l: string) => l.toUpperCase()),
-        })),
-        selectedServiceIds: user.fixerProfile?.services || [],
-        paymentMethods: (user.fixerProfile?.payments || []).map((type: string) => ({
-          type,
-        })),
-        experiences: (user.fixerProfile?.experiences || []).map((exp: any) => ({
-          id: exp.id,
-          title: exp.title,
-          description: exp.description || '',
-          years: exp.years,
-          images: [],
-        })),
-        vehicle: {
-          hasVehicle: user.fixerProfile?.hasVehicle || false,
-          type: user.fixerProfile?.vehicleType,
-          details: undefined,
-        },
-        terms: { accepted: true },
-        additionalInfo: {
-          bio: user.fixerProfile?.descripcion || 'Técnico con experiencia en reparaciones del hogar.',
-        },
-        status: 'approved',
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      },
-      
-    };
-
-    res.json(response);
+    return res.status(200).json(userProfile);
   } catch (error: any) {
-    console.error('Error en getUserProfileById:', error);
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message });
   }
 };
 
-// === GET /api/user-profiles/role/:role ===
-export const getUsersByRole = async (req: Request, res: Response) => {
-  try {
-    const { role } = req.params;
-    const users = await User.find({ role }).select('-password -__v');
-
-    const response: IUserProfile[] = users.map(user => ({
-      user: {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        phone: user.phone || '',
-        role: user.role,
-        urlPhoto: user.fixerProfile?.photoUrl,
-      },
-      profile: {
-        ci: user.fixerProfile?.ci || '',
-        photoUrl: user.fixerProfile?.photoUrl,
-        location: user.fixerProfile?.location
-          ? {
-              lat: user.fixerProfile.location.lat,
-              lng: user.fixerProfile.location.lng,
-            }
-          : null,
-        services: (user.fixerProfile?.services || []).map((svcId: string) => ({
-          id: svcId,
-          name: svcId
-            .replace('svc-', '')
-            .replace('-', ' ')
-            .replace(/\b\w/g, (l: string) => l.toUpperCase()),
-        })),
-        selectedServiceIds: user.fixerProfile?.services || [],
-        paymentMethods: (user.fixerProfile?.payments || []).map((type: string) => ({ type })),
-        experiences: [],
-        vehicle: { hasVehicle: user.fixerProfile?.hasVehicle || false },
-        terms: { accepted: true },
-        additionalInfo: { bio: '' },
-        status: 'approved',
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      },
-    }));
-
-    res.json(response);
-  } catch (error: any) {
-    console.error('Error en getUsersByRole:', error);
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// === PATCH /api/user-profiles/:id/bio ===
 export const updateBio = async (
   req: Request<{ id: string }, {}, { bio: string }>,
   res: Response
@@ -136,28 +60,31 @@ export const updateBio = async (
   try {
     const { id } = req.params;
     const { bio } = req.body;
-
-    const updated = await User.findByIdAndUpdate(
-      id,
-      { $set: { 'fixerProfile.bio': bio } },
+    const updated = await userProfileModel.findOneAndUpdate(
+      { 'user.id': id },
+      { $set: { 'profile.additionalInfo.bio': bio } },
       { new: true }
-    ).select('-password -__v');
-
-    if (!updated) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    res.json({
-      message: 'Bio actualizada',
-      bio,
-    });
+    );
+    if (!updated) return res.status(404).json({ error: 'User not found' });
+    res.json(updated);
   } catch (error: any) {
-    console.error('Error en updateBio:', error);
     res.status(400).json({ error: error.message });
   }
 };
 
-// === PATCH /api/user-profiles/:id/convert-fixer ===
+export const getUsersByRole = async (
+  req: Request<{ role: string }>,
+  res: Response
+) => {
+  try {
+    const { role } = req.params;
+    const users = await userProfileModel.find({ 'user.role': role });
+    res.json(users);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
 export const convertToFixer = async (
   req: Request<{ id: string }, {}, { profile: any }>,
   res: Response
@@ -166,48 +93,49 @@ export const convertToFixer = async (
     const { id } = req.params;
     const { profile } = req.body;
 
-    const updated = await User.findByIdAndUpdate(
-      id,
-      {
-        $set: {
-          role: 'fixer',
-          fixerProfile: profile,
-        },
-      },
-      { new: true }
-    ).select('-password -__v');
+    console.log('convertToFixer called for ID:', id);
+    console.log('Profile data:', JSON.stringify(profile, null, 2));
 
-    if (!updated) {
-      return res.status(404).json({ error: 'User not found' });
+    // Map profile data to User model fields
+    const updateData: any = {
+      role: 'fixer',
+      telefono: profile.telefono,
+      ci: profile.ci,
+      servicios: profile.services ? profile.services.map((s: any) => s.name) : [],
+      vehiculo: profile.vehicle,
+      metodoPago: profile.paymentMethods ? {
+        hasEfectivo: profile.paymentMethods.some((p: any) => p.type === 'efectivo'),
+        qr: profile.paymentMethods.some((p: any) => p.type === 'qr'),
+        tarjetaCredito: profile.paymentMethods.some((p: any) => p.type === 'tarjeta'),
+      } : undefined,
+      workLocation: profile.location,
+      acceptTerms: profile.terms?.accepted,
+      fixerProfile: 'completed'
+    };
+
+    // Clean undefined values
+    Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true }
+    );
+
+    if (!updatedUser) return res.status(404).json({ error: 'User not found' });
+    res.json(updatedUser);
+  } catch (error: any) {
+    console.error('Error completo en convertToFixer:', error);
+
+    let message = 'Error desconocido';
+    if (error.name === 'CastError') {
+      message = `ID inválido: ${error.value}`;
+    } else if (error.name === 'ValidationError') {
+      message = Object.values(error.errors).map((e: any) => e.message).join(', ');
+    } else if (error.message) {
+      message = error.message;
     }
 
-    res.json(updated);
-  } catch (error: any) {
-    console.error('Error en convertToFixer:', error);
-    res.status(400).json({ error: error.message });
-  }
-};
-
-// === (Opcional) GET /api/user-profiles/ ===
-export const getUserProfiles = async (_req: Request, res: Response) => {
-  try {
-    const users = await User.find().select('-password -__v');
-    res.json(users);
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-};
-
-// === (Opcional) POST /api/user-profiles/ ===
-export const createUserProfile = async (
-  req: Request<{}, {}, any>,
-  res: Response
-) => {
-  try {
-    const user = new User(req.body);
-    await user.save();
-    res.status(201).json(user);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+    res.status(400).json({ error: message });
   }
 };

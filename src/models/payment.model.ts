@@ -152,7 +152,6 @@ PaymentSchema.pre("validate", async function (next) {
 });
 
 // Índices recomendados
-PaymentSchema.index({ code: 1 }, { unique: true });
 PaymentSchema.index({ payerId: 1, paymentDate: -1 });
 PaymentSchema.index({ jobId: 1, status: 1 });
 

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getOffers, getUniqueTags } from '../controllers/jobOfert.controller';
+import { getOffers, getUniqueTags, getFilterCounts } from '../controllers/jobOfert.controller';
 
 const router = Router();
 
@@ -34,4 +34,6 @@ router.get('/offers', getOffers);
  * Respuesta: ["pisos", "paredes", "instalación", ...]
  */
 router.get('/tags', getUniqueTags); // <-- 2. Define la nueva ruta
+
+router.get('/filter-counts', getFilterCounts);
 export default router;

@@ -1,5 +1,8 @@
 import { User } from "../../models/user.model";
 import { IUser } from "../../models/user.model";
+import { Job } from "../../models/job.model";
+import Certification from "../../models/certification.model";
+import Experience from "../../models/experience.model";
 import bcrypt from "bcryptjs";
 
 interface ManualUser {
@@ -26,7 +29,7 @@ export async function checkUserExists(email: string): Promise<boolean> {
 export async function createManualUser(
   user: ManualUser
 ): Promise<InsertedUser & { _id: string; picture?: string }> {
-  
+
   const hashedPassword = await bcrypt.hash(user.password, 10);
 
   const newUserData: Partial<IUser> = {
@@ -69,9 +72,7 @@ export async function createManualUser(
       tarjetaCredito: false,
     },
 
-    experience: {
-      descripcion: "",
-    },
+
 
     workLocation: {
       lat: 0,
@@ -87,6 +88,46 @@ export async function createManualUser(
   const created = await User.create(newUserData);
 
   console.log("Usuario manual creado:", user.email);
+
+  // Initialize related collections
+  try {
+    // Default Job (Offer)
+    await Job.create({
+      title: "Bienvenido a Servineo",
+      description: "Registro inicial completado",
+      status: "pending",
+      requesterId: created._id.toString(),
+      price: 0,
+      department: "La Paz", // Default department
+      jobType: "Albañil" // Default job type
+    });
+
+    // Default Certification
+    await Certification.create({
+      fixerId: created._id,
+      name: "Sin certificación inicial",
+      institution: "Servineo",
+      issueDate: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    // Default Experience
+    await Experience.create({
+      fixerId: created._id,
+      jobTitle: "Sin experiencia inicial",
+      jobType: "General",
+      isCurrent: false,
+      startDate: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+
+    console.log("Colecciones relacionadas inicializadas para:", user.email);
+  } catch (error) {
+    console.error("Error inicializando colecciones relacionadas:", error);
+    // No lanzamos error para no revertir la creación del usuario, pero lo logueamos
+  }
 
   return {
     _id: created._id.toString(),

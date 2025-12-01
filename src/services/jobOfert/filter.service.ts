@@ -7,6 +7,7 @@ import { FilterCommon } from '../common/filter.common';
 export type FilterOptions = {
   ranges?: string[];
   city?: string;
+  cities?: string[];
   categories?: string[];
 };
 
@@ -22,7 +23,17 @@ export function filterOffers(options?: FilterOptions): any {
     }
   }
 
-  if (options.city) {
+  // Procesar ciudades: pueden venir como single city o como array cities
+  if (options.cities && options.cities.length > 0) {
+    // Multiples ciudades: usar $in con logica OR
+    const normalizedCities = options.cities
+      .map((c) => validateAndNormalizeCity(c))
+      .filter(Boolean);
+    if (normalizedCities.length > 0) {
+      filters.city = { $in: normalizedCities };
+    }
+  } else if (options.city) {
+    // Ciudad unica (compatibilidad con codigo antiguo)
     filters.city = validateAndNormalizeCity(options.city);
   }
 

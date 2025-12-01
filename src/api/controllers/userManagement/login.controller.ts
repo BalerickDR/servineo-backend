@@ -1,4 +1,3 @@
-//src/api/controllers/userManagement/login.controller.ts
 import { Request, Response } from 'express';
 import { connectDB } from '../../../config/db/mongoClient';
 import bcrypt from 'bcryptjs';
@@ -52,12 +51,11 @@ export const loginUsuario = async (req: Request, res: Response) => {
 
     const userPicture = user.url_photo || null;
 
-    // Generamos el token (ya corregiste que sea ligero)
     const sessionToken = generarToken(
       user._id.toString(),
       user.name || 'Usuario',
       email,
-      // userPicture // Mejor no meter la foto al token para evitar el error 431
+      userPicture
     );
 
     return res.json({
@@ -113,8 +111,8 @@ export const loginGoogle = async (req: Request, res: Response) => {
     const sessionToken = generarToken(
       dbUser._id.toString(),
       dbUser.name,
-      dbUser.email
-      // dbUser.url_photo // Lo quitamos para evitar error header too large
+      dbUser.email,
+      dbUser.url_photo
     );
 
     return res.json({

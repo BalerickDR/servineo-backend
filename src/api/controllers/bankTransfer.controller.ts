@@ -1,4 +1,4 @@
-//pasar a jhasseft
+import { Request, Response } from 'express';
 import PaymentIntent from '../../models/PaymentIntent.model';
 import ProviderPaymentMethod from '../../models/ProviderPaymentMethod.model';
 
@@ -13,7 +13,7 @@ function generateRef() {
   return s;
 }
 
-export async function createOrReuseIntent(req, res) {
+export async function createOrReuseIntent(req: Request, res: Response) {
   try {
     console.log('📩 Body recibido:', req.body);
 
@@ -35,47 +35,31 @@ export async function createOrReuseIntent(req, res) {
 
     const providerId = SERVINEO_PROVIDER_ID;
 
-    let intent;
-    try {
-      console.log('🔍 Buscando intent existente...');
-      intent = await PaymentIntent.findOne({ fixerId, type: 'wallet' });
-      console.log('📄 Intent encontrado:', intent);
-    } catch (e) {
-      console.error('Error buscando intent:', e);
-      throw e;
-    }
+    console.log('🔍 Buscando intent existente...');
+    // Usamos la sintaxis limpia del General (sin try/catch anidado innecesario)
+    let intent = await PaymentIntent.findOne({ fixerId, type: 'wallet' });
+    console.log('📄 Intent encontrado:', intent);
 
     if (!intent) {
-      try {
-        console.log('🆕 Creando nuevo intent...');
-        intent = await PaymentIntent.create({
-          bookingId: generateRef(),
-          providerId,
-          fixerId,
-          amountExpected: amount,
-          currency,
-          paymentReference: generateRef(),
-          deadlineAt: new Date(Date.now() + deadlineMinutes * 60 * 1000),
-          status: 'pending',
-          type: 'wallet',
-          method: 'transfer',
-        });
-        console.log('🆕 Intent creado:', intent);
-      } catch (e) {
-        console.error('Error creando intent:', e);
-        throw e;
-      }
+      console.log('🆕 Creando nuevo intent...');
+      intent = await PaymentIntent.create({
+        // 🟢 MANTENEMOS TU LÓGICA LOCAL: Generar referencia en lugar de null
+        bookingId: generateRef(), 
+        providerId,
+        fixerId,
+        amountExpected: amount,
+        currency,
+        paymentReference: generateRef(),
+        deadlineAt: new Date(Date.now() + deadlineMinutes * 60 * 1000),
+        status: 'pending',
+        type: 'wallet',
+        method: 'transfer',
+      });
     }
 
-    let method;
-    try {
-      console.log('🏦 Buscando método de pago activo...');
-      method = await ProviderPaymentMethod.findOne({ providerId, active: true });
-      console.log('✅ Método encontrado:', method);
-    } catch (e) {
-      console.error('Error buscando método:', e);
-      throw e;
-    }
+    console.log('🏦 Buscando método de pago activo...');
+    const method = await ProviderPaymentMethod.findOne({ providerId, active: true });
+    console.log('✅ Método encontrado:', method);
 
     if (!method) {
       return res.json({

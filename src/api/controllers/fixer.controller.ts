@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { FixerService } from "../../services/common/FixerService";
-import { EnableFixerInput } from "../../types/EnableFixerInput";
-import { Offer } from "../../models/offer.model"; // ← AÑADIDO
+import { FixerService } from '../../services/common/FixerService';
+import { EnableFixerInput } from '../../types/EnableFixerInput';
+import { Offer } from '../../models/offer.model'; // ← AÑADIDO
 
 const fixerService = new FixerService();
 
@@ -16,9 +16,9 @@ export async function enableFixer(req: Request, res: Response) {
     const result = await fixerService.enableFixer(data);
 
     res.status(200).json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error habilitando fixer:', error);
-    res.status(500).json({ error: error.message || 'Error interno' });
+    res.status(500).json({ error: (error as Error).message || 'Error interno' });
   }
 }
 
@@ -51,8 +51,8 @@ export const getMyOffers = async (req: Request, res: Response) => {
       totalPages: Math.ceil(total / limit),
       data: offers,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error obteniendo mis ofertas:', error);
-    res.status(500).json({ error: error.message || 'Error interno' });
+    res.status(500).json({ error: (error as Error).message || 'Error interno' });
   }
 };

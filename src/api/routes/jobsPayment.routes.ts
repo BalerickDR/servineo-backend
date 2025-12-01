@@ -1,5 +1,5 @@
 import express from "express";
-import { listJobs } from "../controllers/jobsPayments.controller";
+import { listJobs } from "../controllers/jobsPayment.controller";
 
 const router = express.Router();
 

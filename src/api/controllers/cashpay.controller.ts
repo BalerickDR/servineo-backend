@@ -1,9 +1,12 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
+import { MongoServerError } from 'mongodb'; // Del General: Para manejo de errores robusto
 import { Payment } from "../../models/payment.model";
-import User from "../../models/usersPayment.model";
-import Jobspay from "../../models/jobs.model";
+import User from "../../models/userPayment.model"; // Usamos la importación del General
+import Jobspay from "../../models/jobs.model"; // 🟢 CRÍTICO: Mantenemos tu importación local
 
+// 🟢 Mantenemos TU tiempo de expiración (48h) en lugar del General (1h)
+// ya que el efectivo suele requerir más tiempo logística.
 const CODE_EXPIRATION_MS = 48 * 60 * 60 * 1000;
 
 // ============================================
@@ -37,26 +40,25 @@ export const createPaymentLab = async (req: Request, res: Response) => {
       commissionRate = 0.05,
     } = req.body ?? {};
 
-    // ===== VALIDACIONES BÁSICAS =====
+    // ===== VALIDACIONES BÁSICAS (Del General - Más estrictas) =====
     if (!jobId || !mongoose.isValidObjectId(jobId)) {
       return res.status(400).json({ error: "jobId requerido y válido" });
     }
-    // ... (otras validaciones de ID) ...
+    if (!requesterId || !mongoose.isValidObjectId(requesterId)) {
+      return res.status(400).json({ error: 'requesterId requerido y válido' });
+    }
+    if (!fixerId || !mongoose.isValidObjectId(fixerId)) {
+      return res.status(400).json({ error: 'fixerId requerido y válido' });
+    }
 
     // ===== VERIFICAR QUE LOS USUARIOS EXISTAN =====
-    // --- CORRECCIÓN: Buscamos solo en 'User' ---
-    let [requester, fixer] = await Promise.all([
+    const [requester, fixer] = await Promise.all([
       User.findById(requesterId),
       User.findById(fixerId),
     ]);
 
-    if (!requester) {
-      return res.status(404).json({ error: "Requester no encontrado" });
-    }
-
-    if (!fixer) {
-      return res.status(404).json({ error: "Fixer no encontrado" });
-    }
+    if (!requester) return res.status(404).json({ error: "Requester no encontrado" });
+    if (!fixer) return res.status(404).json({ error: "Fixer no encontrado" });
 
     // ===== VALIDAR ROLES =====
     if (requester.role !== "requester") {
@@ -76,7 +78,11 @@ export const createPaymentLab = async (req: Request, res: Response) => {
         error: "subTotal, service_fee y discount deben ser numéricos" 
       });
     }
-    // ... (otras validaciones de montos) ...
+
+    // Validación de negativos del General
+    if (nSub < 0 || nFee < 0 || nDisc < 0) {
+      return res.status(400).json({ error: 'Los montos no pueden ser negativos' });
+    }
 
     const nComm = Number(commissionRate);
     if (Number.isNaN(nComm) || nComm < 0 || nComm > 1) {
@@ -93,25 +99,19 @@ export const createPaymentLab = async (req: Request, res: Response) => {
       });
     }
 
-    // ============================================
-    // --- CORRECCIÓN: 'total' calculado ANTES de usarse
-    // ============================================
+    // ===== CALCULAR TOTAL =====
     const total = nSub + nFee - nDisc;
 
     if (total <= 0) {
-      return res.status(400).json({ 
-        error: "El total debe ser mayor a 0" 
-      });
+      return res.status(400).json({ error: "El total debe ser mayor a 0" });
     }
 
     // ===== VALIDACIÓN ESPECÍFICA PARA EFECTIVO =====
-    // (Ahora 'total' sí existe)
     if (method === "cash" && (total < 10 || total >= 5000)) {
       return res.status(400).json({ 
         error: "Pago en efectivo solo entre 10 y 5000 Bs." 
       });
     }
-    // --- FIN DE LA CORRECCIÓN ---
 
     // ==========================================================
     // --- LÓGICA DE CONTROL DE DUPLICADOS ---
@@ -126,7 +126,7 @@ export const createPaymentLab = async (req: Request, res: Response) => {
       });
 
       if (existingPendingPayment) {
-        console.log(`[createPaymentLab] ✅ Pago PENDIENTE encontrado. Devolviendo pago existente: ${existingPendingPayment._id}`);
+        console.log(`[createPaymentLab] ✅ Pago PENDIENTE encontrado. Devolviendo pago existente.`);
         
         return res.status(200).json({ 
           message: "Pago pendiente existente recuperado.",
@@ -141,19 +141,15 @@ export const createPaymentLab = async (req: Request, res: Response) => {
           }
         });
       }
-      
       console.log(`[createPaymentLab] No se encontraron pagos pendientes. Creando uno nuevo...`);
     }
-    // ==========================================================
-    // --- FIN DE LA LÓGICA DE CONTROL DE DUPLICADOS ---
-    // ==========================================================
 
     const code = generateRandomCode(6);
     const codeExpiresAt = new Date(Date.now() + CODE_EXPIRATION_MS);
 
     console.log(`💰 Creando pago: total=${total} Bs, método=${method}`);
 
-    // ===== CREAR PAGO (en 'payments') =====
+    // ===== CREAR PAGO =====
     const doc = await Payment.create({
       jobId: new mongoose.Types.ObjectId(jobId),
       payerId: new mongoose.Types.ObjectId(requesterId),
@@ -173,21 +169,20 @@ export const createPaymentLab = async (req: Request, res: Response) => {
     });
 
     // ============================================
-    // 🔥 LÓGICA AÑADIDA: Actualizar 'jobspays' a "Pendiente"
+    // 🔥 LÓGICA LOCAL MANTENIDA: Actualizar 'jobspays' a "pago pendiente"
+    // (El repo general NO tiene esto, pero es crucial para tu flujo)
     // ============================================
     try {
       console.log(`[createPaymentLab] Actualizando 'jobspays' a Pendiente para jobId: ${jobId}`);
       await Jobspay.findByIdAndUpdate(
         jobId,
-        { $set: { status: "pago pendiente" } } // Asegúrate que 'Pendiente' sea un valor válido
+        { $set: { status: "pago pendiente" } }
       );
       console.log(`[createPaymentLab] ✅ 'jobspays' actualizado.`);
     } catch (jobError: any) {
       console.error("❌ Error al actualizar 'jobspays' en createPaymentLab:", jobError.message);
+      // No retornamos error aquí para no abortar la creación del pago si falla la actualización del job
     }
-    // ============================================
-    // --- FIN DE LA LÓGICA AÑADIDA ---
-    // ============================================
 
     console.log(`✅ Pago creado exitosamente con código: ${code}`);
 
@@ -204,17 +199,18 @@ export const createPaymentLab = async (req: Request, res: Response) => {
       }
     });
 
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("❌ Error en createPaymentLab:", e);
 
-    if (e?.name === "ValidationError") {
-      return res.status(400).json({ error: e.message });
+    // Tipado seguro del General
+    if ((e as Error)?.name === "ValidationError") {
+      return res.status(400).json({ error: (e as Error).message });
     }
-    if (e?.name === "CastError") {
+    if ((e as Error)?.name === "CastError") {
       return res.status(400).json({ error: "ObjectId inválido" });
     }
     return res.status(500).json({ 
-      error: e?.message || "Error creando pago" 
+      error: (e as Error)?.message || "Error creando pago" 
     });
   }
 }
@@ -245,7 +241,7 @@ export const regeneratePaymentCode = async (req: Request, res: Response) => {
     payment.code = newCode;
     payment.codeExpiresAt = new Date(Date.now() + CODE_EXPIRATION_MS);
     payment.failedAttempts = 0;
-    payment.lockUntil = null as any;
+    payment.lockUntil = null as unknown; // Fix de tipado del general
 
     await payment.save();
 
@@ -258,14 +254,15 @@ export const regeneratePaymentCode = async (req: Request, res: Response) => {
         status: payment.status,
       },
     });
-  } catch (e: any) {
-    if (e?.name === "ValidationError") {
-      return res.status(400).json({ error: e.message });
+  } catch (e: unknown) {
+    const error = e as any;
+    if (error?.name === "ValidationError") {
+      return res.status(400).json({ error: error.message });
     }
-    if (e?.code === 11000) {
+    if (error instanceof MongoServerError && error.code === 11000) {
       // Colisión de código único
       return res.status(409).json({ error: "conflicto de código, intente nuevamente" });
     }
-    return res.status(500).json({ error: e?.message || "Error regenerando código" });
+    return res.status(500).json({ error: error?.message || "Error regenerando código" });
   }
 }

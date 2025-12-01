@@ -16,6 +16,7 @@ import { filterOffers as advancedFilterOffers } from './jobOfert/advancedFilter.
 export type OfferFilterOptions = {
   ranges?: string[];
   city?: string;
+  cities?: string[]; // Agregado del repo general
   categories?: string[];
   search?: string;
   sortBy?: string | SortCriteria;
@@ -34,6 +35,16 @@ export type OfferFilterOptions = {
   searchFields?: string[];
 };
 
+// ============================================
+// CONFIGURACIÓN DE CACHÉ (Del repo general)
+// ============================================
+let priceRangesCache: {
+  data: any;
+  timestamp: number;
+} | null = null;
+
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hora en milisegundos
+
 export const getAllOffers = async () => {
   return await QueryExecutor.findAll(Offer);
 };
@@ -43,8 +54,9 @@ export const getOffersFiltered = async (options?: OfferFilterOptions) => {
   // Si no hay opciones, devolver el resultado sin filtros
   if (!options) {
     return await QueryExecutor.execute(Offer, {}, null, 0, 10);
-  } // 1. LÓGICA DE DECISIÓN: Determinar si es Búsqueda Avanzada
+  }
 
+  // 1. LÓGICA DE DECISIÓN: Determinar si es Búsqueda Avanzada
   const isAdvancedSearch = options.tags || options.minPrice || options.maxPrice;
 
   let filterQuery: any;
@@ -55,8 +67,9 @@ export const getOffersFiltered = async (options?: OfferFilterOptions) => {
   } else {
     // Opción B: Es estándar (usa solo la lógica de City, Fixer, Category)
     filterQuery = standardFilterOffers(options);
-  } // 2. LÓGICA DE BÚSQUEDA POR TEXTO (SEARCH) - ¡UNIFICADA Y CORREGIDA!
+  }
 
+  // 2. LÓGICA DE BÚSQUEDA POR TEXTO (SEARCH)
   let searchQuery: any = {};
 
   if (options.search) {
@@ -68,16 +81,16 @@ export const getOffersFiltered = async (options?: OfferFilterOptions) => {
           : ['title', 'description'];
       searchQuery = searchOffersExactFields(options.search, fields);
     } else if (options.searchFields && options.searchFields.length > 0) {
-      // Si el caller indicó campos concretos (por ejemplo title-only),
-      // usamos la variante smart limitada a esos campos.
+      // Si el caller indicó campos concretos, usamos la variante smart limitada
       searchQuery = searchOffersInFields(options.search, options.searchFields);
     } else {
       // Comportamiento por defecto (smart search sobre todos los campos)
       searchQuery = searchOffers(options.search);
     }
-  } // 3. COMBINAR TODOS LOS FILTROS
+  }
+
+  // 3. COMBINAR TODOS LOS FILTROS
   // Combina la Query de Filtros (filterQuery) y la Query de Búsqueda por Texto (searchQuery)
-  // Si se proporciona un filtro de fecha (YYYY-MM-DD), añadir rango createdAt [00:00:00,23:59:59.999]
   if (options && options.date) {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(options.date);
     if (m) {
@@ -85,40 +98,58 @@ export const getOffersFiltered = async (options?: OfferFilterOptions) => {
       const mo = m[2];
       const d = m[3];
       // Construir inicio del día UTC y el inicio del día siguiente (exclusivo)
-      // Esto evita problemas por millis y es una práctica robusta: [startUTC, nextStartUTC)
       const start = new Date(Date.UTC(Number(y), Number(mo) - 1, Number(d), 0, 0, 0, 0));
       const nextStart = new Date(Date.UTC(Number(y), Number(mo) - 1, Number(d) + 1, 0, 0, 0, 0));
 
-      // Añadir al filterQuery existente usando $lt en lugar de $lte para el límite superior
       filterQuery = FilterCommon.combine(filterQuery, {
         createdAt: { $gte: start, $lt: nextStart },
       });
     }
   }
 
-  // Filtrado por rating: si se pasa rating (1..5) aplicamos >=n AND < n+1
+  // 3.2. Lógica para filtro de CALIFICACIÓN (MEJORADA del repo general)
   if (options && typeof options.rating === 'number' && !isNaN(options.rating)) {
-    const n = Math.floor(options.rating);
-    if (n >= 1 && n <= 5) {
-      filterQuery = FilterCommon.combine(filterQuery, { rating: { $gte: n, $lt: n + 1 } });
+    const star = options.rating;
+
+    // Si es un número entero (viene del filtro de estrellas básico, ej: 4 estrellas)
+    if (Number.isInteger(star) && star >= 1 && star <= 5) {
+      // Busca rango [4.0, 5.0)
+      const minRating = star;
+      const maxRatingExclusive = star + 1;
+
+      filterQuery = FilterCommon.combine(filterQuery, {
+        rating: { $gte: minRating, $lt: maxRatingExclusive },
+      });
+    }
+    // Si es un decimal específico (viene de la búsqueda avanzada o un filtro exacto)
+    else if (star >= 1.0 && star <= 5.9) {
+      filterQuery = FilterCommon.combine(filterQuery, { rating: star });
     }
   }
 
-  const finalQuery = FilterCommon.combine(filterQuery, searchQuery); // 4. APLICAR ORDENAMIENTO Y PAGINACIÓN
+  const finalQuery = FilterCommon.combine(filterQuery, searchQuery);
 
+  // 4. APLICAR ORDENAMIENTO Y PAGINACIÓN
   const sort = sortOffers(options?.sortBy);
-  const { limit, skip } = PaginationCommon.getOptions(options?.limit, options?.skip); // 5. EJECUTAR LA CONSULTA FINAL
+  const { limit, skip } = PaginationCommon.getOptions(options?.limit, options?.skip);
 
+  // 5. EJECUTAR LA CONSULTA FINAL
   return await QueryExecutor.execute(Offer, finalQuery, sort, skip, limit);
 };
 
 /**
- * codigo solucionado para obtener rangos de precios dinámicos
  * Calcula rangos de precio dinámicos basados en el mínimo y máximo de la colección `offers`.
- * Devuelve un array de rangos con labels y valores { min, max } donde null indica -inf/+inf.
- * Por defecto crea 4 buckets internos y añade opciones "Menos de" y "Más de" (por lo que se devuelven 6 items si includeExtremes=true).
+ * INCLUYE CACHÉ para mejorar el rendimiento.
  */
 export const getPriceRanges = async (buckets = 4, includeExtremes = true) => {
+  // ============================================
+  // MEJORA: Verificar caché primero
+  // ============================================
+  const now = Date.now();
+  if (priceRangesCache && (now - priceRangesCache.timestamp) < CACHE_DURATION) {
+    return priceRangesCache.data;
+  }
+
   // Agregación para obtener min y max
   const agg = await Offer.aggregate([
     {
@@ -130,30 +161,33 @@ export const getPriceRanges = async (buckets = 4, includeExtremes = true) => {
     },
   ]);
 
-  if (!agg || agg.length === 0) return { min: null, max: null, ranges: [] };
+  // Función auxiliar para guardar en caché y retornar
+  const cacheAndReturn = (result: any) => {
+    priceRangesCache = { data: result, timestamp: now };
+    return result;
+  };
 
-  let min = agg[0].min as number;
-  let max = agg[0].max as number;
+  if (!agg || agg.length === 0) {
+    return cacheAndReturn({ min: null, max: null, ranges: [] });
+  }
 
-  if (min == null || max == null) return { min: null, max: null, ranges: [] };
+  const min = agg[0].min as number;
+  const max = agg[0].max as number;
+
+  if (min == null || max == null) {
+    return cacheAndReturn({ min: null, max: null, ranges: [] });
+  }
 
   if (min === max) {
-    // Un solo valor: devolver rangos sencillos alrededor
     const one = Math.floor(min);
-    return {
+    return cacheAndReturn({
       min: one,
       max: one,
       ranges: [{ label: `= $${one}`, min: one, max: one }],
-    };
+    });
   }
 
-  // calcular step y límites (algoritmo más estable):
-  // 1) stepRaw = span / buckets
-  // 2) base = 10^floor(log10(stepRaw))
-  // 3) step = ceil(stepRaw / base) * base  (redondear hacia arriba al múltiplo de base)
-  // 4) lower = floor(min / step) * step  (redondear el límite inferior hacia abajo)
-  // 5) boundaries = [lower, lower+step, ..., lower + step * buckets]
-  // 6) ajustar último boundary para que >= max
+  // Algoritmo de cálculo de rangos
   const span = max - min;
   const stepRaw = span / buckets;
 
@@ -168,14 +202,12 @@ export const getPriceRanges = async (buckets = 4, includeExtremes = true) => {
 
   const boundaries: number[] = [];
   let lower = Math.floor(min / step) * step;
-  // If lower is negative and prices are positive, clamp to 0
   if (lower < 0 && min >= 0) lower = 0;
 
   for (let i = 0; i <= buckets; i++) {
     boundaries.push(lower + step * i);
   }
 
-  // Ensure last boundary covers max
   while (boundaries[boundaries.length - 1] < max) {
     boundaries.push(boundaries[boundaries.length - 1] + step);
   }
@@ -183,11 +215,9 @@ export const getPriceRanges = async (buckets = 4, includeExtremes = true) => {
   const ranges: Array<{ label: string; min: number | null; max: number | null }> = [];
 
   if (includeExtremes) {
-    // Menos de first upper
     const firstUpper = boundaries[1] ?? boundaries[boundaries.length - 1];
     ranges.push({ label: `Menos de $${firstUpper}`, min: null, max: firstUpper });
 
-    // mid boundaries: omit the very low (boundaries[0]) and the last padded boundary
     const mid = boundaries.slice(1, Math.max(2, boundaries.length - 1));
     if (mid.length >= 2) {
       for (let i = 0; i < mid.length - 1; i++) {
@@ -198,11 +228,9 @@ export const getPriceRanges = async (buckets = 4, includeExtremes = true) => {
       const lastMin = mid[mid.length - 1];
       ranges.push({ label: `Más de $${lastMin}`, min: lastMin, max: null });
     } else {
-      // Fallback: si no hay suficientes boundaries intermedias, usar firstUpper como límite inferior
       ranges.push({ label: `Más de $${firstUpper}`, min: firstUpper, max: null });
     }
   } else {
-    // Sin extremos: devolver todos los pares de boundaries
     for (let i = 0; i < boundaries.length - 1; i++) {
       const a = boundaries[i];
       const b = boundaries[i + 1];
@@ -210,5 +238,13 @@ export const getPriceRanges = async (buckets = 4, includeExtremes = true) => {
     }
   }
 
-  return { min, max, ranges };
+  const result = { min, max, ranges };
+  return cacheAndReturn(result);
+};
+
+// ============================================
+// FUNCIÓN DE LIMPIEZA (Útil si insertas una oferta y quieres invalidar el caché)
+// ============================================
+export const clearPriceRangesCache = () => {
+  priceRangesCache = null;
 };

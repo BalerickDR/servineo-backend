@@ -14,7 +14,8 @@ export function validatePageRange(
   currentPage: number,
   totalItems: number,
   itemsPerPage: number,
-): PaginationValidationResult {
+): PaginationValidationResult
+ {
   const totalPages = totalItems > 0 ? Math.ceil(totalItems / itemsPerPage) : 0;
 
   // Si no hay items, cualquier página es válida (retornará array vacío)
@@ -27,12 +28,11 @@ export function validatePageRange(
   }
 
   // Validar que la página esté en rango válido
-  if (currentPage < 1 || currentPage > totalPages) {
+  if (currentPage > totalPages) {
     return {
-      isValid: false,
-      currentPage,
-      totalPages,
-      errorMessage: `Página ${currentPage} fuera de rango. Total de páginas disponibles: ${totalPages}`,
+      isValid: true,
+      currentPage: totalPages,
+      totalPages, 
     };
   }
 

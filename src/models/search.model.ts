@@ -19,7 +19,7 @@ export interface Search extends Document {
   createdAt: Date;
   updatedAt: Date;
 }
-
+/*
 const FilterSchema: Schema = new Schema(
   {
     is_reset: {
@@ -50,7 +50,7 @@ const FilterSchema: Schema = new Schema(
   },
   { _id: false },
 );
-
+*/
 const SearchSchema: Schema = new Schema(
   {
     user_type: {
