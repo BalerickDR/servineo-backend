@@ -254,10 +254,3 @@ export const getPriceRanges = async (buckets = 4, includeExtremes = true) => {
 export const clearPriceRangesCache = () => {
   priceRangesCache = null;
 };
-
-// ============================================
-// FUNCIÓN DE LIMPIEZA (Útil si insertas una oferta y quieres invalidar el caché)
-// ============================================
-export const clearPriceRangesCache = () => {
-  priceRangesCache = null;
-};

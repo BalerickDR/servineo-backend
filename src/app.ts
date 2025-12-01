@@ -151,7 +151,7 @@ app.use('/api/controlC/codigos2fa', codigos2faRouter);
 app.use('/api/controlC/2fa', twoFaRouter);
 
 // 6. Pagos y Finanzas
-app.use('/api/fixer/payment-center', PaymentCenterRoutes); // <--- TU RUTA CRÍTICA
+app.use('/api/fixer/payment-center', PaymentCenterRoutes); 
 app.use('/api', CardsRoutes);
 app.use('/api', PaymentRoutes);
 app.use('/api', BankAccountRoutes);

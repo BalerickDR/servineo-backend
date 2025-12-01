@@ -6,8 +6,8 @@ import { Comision } from "../../models/historycomission.model";
 import { Wallet } from "../../models/wallet.model";
 import Job from "../../models/jobPayment.model"; // Para detalles de factura
 import User from "../../models/userPayment.model"; 
-import Jobspay from "../../models/jobs.model"; // 🟢 CRÍTICO: Tu modelo local que funciona
-import { updateWalletLowBalanceFlags } from "../../services/wallet.service"; // 🟢 Tu servicio local
+import Jobspay from "../../models/jobs.model"; // Tu modelo local que funciona
+import { updateWalletLowBalanceFlags } from "../../services/wallet.service"; // Tu servicio local
 
 const MAX_ATTEMPTS = 3;
 const LOCK_MINUTES = 10;
@@ -21,7 +21,7 @@ export async function confirmPaymentLab(req: Request, res: Response) {
 
     // 1. Validaciones básicas
     if (!mongoose.isValidObjectId(id)) {
-      return res.status(400).json({ error: 'id inválido' });
+      return res.status(400).json({ error: "id inválido" });
     }
 
     if (!code) {
@@ -37,35 +37,36 @@ export async function confirmPaymentLab(req: Request, res: Response) {
 
     session.startTransaction();
 
-    // Lock pesimista (del General)
+    // Lock pesimista
     const pay = await Payment.findById(id).session(session);
 
     if (!pay) {
       await session.abortTransaction();
-      return res.status(404).json({ error: 'pago no encontrado' });
+      return res.status(404).json({ error: "pago no encontrado" });
     }
 
     // Verificar estado
     if (String(pay.status).toLowerCase() !== "pending") {
       await session.abortTransaction();
-      return res.status(400).json({
+      return res.status(400).json({ 
         error: `el pago ya fue procesado`,
-        status: pay.status,
+        status: pay.status 
       });
     }
 
+    // 🟢 Definición ÚNICA de 'now'
     const now = new Date();
 
     // Verificar expiración
     if (pay.codeExpiresAt && pay.codeExpiresAt.getTime() < now.getTime()) {
       await session.abortTransaction();
-      return res.status(410).json({
-        error: 'código expirado',
-        expiredAt: pay.codeExpiresAt,
+      return res.status(410).json({ 
+        error: "código expirado",
+        expiredAt: pay.codeExpiresAt 
       });
     }
 
-    // Verificar bloqueo activo (Mejora del General: cálculo de tiempo restante)
+    // Verificar bloqueo activo
     if (pay.lockUntil && pay.lockUntil.getTime() > now.getTime()) {
       await session.abortTransaction();
       const msLeft = pay.lockUntil.getTime() - now.getTime();
@@ -77,7 +78,7 @@ export async function confirmPaymentLab(req: Request, res: Response) {
         error: "demasiados intentos fallidos",
         message: `intenta nuevamente en ${waitMinutes} minuto(s)`,
         waitMinutes,
-        unlocksAt: pay.lockUntil,
+        unlocksAt: pay.lockUntil
       });
     }
 
@@ -105,10 +106,10 @@ export async function confirmPaymentLab(req: Request, res: Response) {
         await session.commitTransaction();
 
         return res.status(429).json({
-          error: 'cuenta bloqueada',
+          error: "cuenta bloqueada",
           message: `has superado los ${MAX_ATTEMPTS} intentos; intenta nuevamente en ${LOCK_MINUTES} minuto(s)`,
           waitMinutes: LOCK_MINUTES,
-          unlocksAt: lockUntil,
+          unlocksAt: lockUntil
         });
       }
       
@@ -117,43 +118,42 @@ export async function confirmPaymentLab(req: Request, res: Response) {
 
       const remaining = MAX_ATTEMPTS - newAttempts;
       return res.status(401).json({
-        error: 'código inválido',
+        error: "código inválido",
         remainingAttempts: remaining,
-        message: `código inválido, te quedan ${remaining} intento(s)`,
+        message: `código inválido, te quedan ${remaining} intento(s)`
       });
     }
 
     // ✅ Código correcto - Confirmar pago
     const confirmedPayment = await Payment.findOneAndUpdate(
-      {
+      { 
         _id: id,
         status: "pending", 
         code: provided 
       },
       {
         $set: {
-          status: 'paid',
+          status: "paid",
           paymentDate: now,
           failedAttempts: 0,
-          lockUntil: null,
-        },
+          lockUntil: null
+        }
       },
-      {
+      { 
         new: true,
-        session,
-      },
+        session 
+      }
     );
 
     if (!confirmedPayment) {
       await session.abortTransaction();
-      return res.status(409).json({
-        error: 'conflicto: el pago ya fue procesado por otra solicitud',
+      return res.status(409).json({ 
+        error: "conflicto: el pago ya fue procesado por otra solicitud" 
       });
     }
 
     // ============================================
     // 🎯 ACTUALIZAR STATUS DEL JOB A "PAGADO"
-    // (Usamos TU lógica Local con el modelo Jobspay correcto)
     // ============================================
     let jobActualizado = false;
     
@@ -184,10 +184,10 @@ export async function confirmPaymentLab(req: Request, res: Response) {
     // 🧾 ENRIQUECER PAGO CON DATOS DE FACTURA
     // ============================================
     console.log(`🧾 Añadiendo datos de factura al pago ${id}`);
-
+    
     try {
       const [job, requester] = await Promise.all([
-        Job.findById(confirmedPayment.jobId).session(session), // Usamos Job detallado
+        Job.findById(confirmedPayment.jobId).session(session),
         User.findById(confirmedPayment.payerId).session(session)
       ]);
 
@@ -222,10 +222,9 @@ export async function confirmPaymentLab(req: Request, res: Response) {
 
     // ============================================
     // 🔥 TRIGGER: CREAR COMISIÓN AUTOMÁTICAMENTE
-    // (Mantenemos TU lógica local: Permitir saldo negativo)
     // ============================================
     console.log(`💰 Activando trigger de comisión para pago ${id}`);
-
+    
     try {
       const fixerWallet = await Wallet.findOne({ 
         users_id: confirmedPayment.fixerId 
@@ -236,22 +235,21 @@ export async function confirmPaymentLab(req: Request, res: Response) {
       }
 
       const comisionRate = confirmedPayment.commissionRate || 0.05;
-      const montoServicio = confirmedPayment.amount.total;
+      const montoServicio = confirmedPayment.amount.total; 
       const comisionMonto = montoServicio * comisionRate;
 
-      let estadoComision = 'completada';
+      let estadoComision = "completada";
       let motivoFallo = null;
 
-      // 🟢 TU LÓGICA: Permitir saldos negativos y actualizar flags
       if (fixerWallet) {
         await Wallet.findByIdAndUpdate(
           fixerWallet._id,
-          { $inc: { balance: -comisionMonto } }, // Siempre descuenta
+          { $inc: { balance: -comisionMonto } },
           { session }
         );
         console.log(`✅ Comisión de ${comisionMonto} Bs descontada del wallet (Permite negativo)`);
 
-        // Actualizar flags de saldo bajo / crítico
+        // Actualizar flags
         const preBalance = fixerWallet.balance;
         const postBalance = preBalance - comisionMonto;
 
@@ -275,22 +273,17 @@ export async function confirmPaymentLab(req: Request, res: Response) {
         console.warn(`❌ ${motivoFallo}`);
       }
 
-      await Comision.create(
-        [
-          {
-            wallets_id: fixerWallet?._id || confirmedPayment.fixerId,
-            payments_id: confirmedPayment._id,
-            fixer_id: confirmedPayment.fixerId,
-            comision: comisionMonto,
-            monto_servicio: montoServicio,
-            tipo_servicio: 'Servicio general',
-            estado: estadoComision,
-            motivo_fallo: motivoFallo,
-            fecha_completada: estadoComision === 'completada' ? new Date() : undefined,
-          },
-        ],
-        { session },
-      );
+      await Comision.create([{
+        wallets_id: fixerWallet?._id || confirmedPayment.fixerId,
+        payments_id: confirmedPayment._id,
+        fixer_id: confirmedPayment.fixerId,
+        comision: comisionMonto,
+        monto_servicio: montoServicio,
+        tipo_servicio: "Servicio general", 
+        estado: estadoComision,
+        motivo_fallo: motivoFallo,
+        fecha_completada: estadoComision === "completada" ? new Date() : undefined
+      }], { session });
 
       console.log(`✅ Comisión registrada en historial: ${estadoComision}`);
 
@@ -303,7 +296,7 @@ export async function confirmPaymentLab(req: Request, res: Response) {
     console.info(`Payment ${id}: confirmado exitosamente + triggers ejecutados`);
 
     return res.json({
-      message: 'pago confirmado exitosamente',
+      message: "pago confirmado exitosamente",
       data: {
         id: String(confirmedPayment._id),
         total: confirmedPayment.amount.total,
@@ -330,6 +323,7 @@ export async function confirmPaymentLab(req: Request, res: Response) {
       error: "error del servidor al procesar el pago",
       ...(process.env.NODE_ENV === 'development' && { details: (e as Error).message })
     });
+    
   } finally {
     session.endSession();
   }

@@ -9,13 +9,7 @@ import 'dotenv/config';
 
 // 1. Validar claves al inicio
 if (!process.env.STRIPE_SECRET_KEY) {
-  console.error('❌ ERROR: Falta STRIPE_SECRET_KEY en el archivo .env');
-  process.exit(1);
-}
-
-const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY;
-if (!RECAPTCHA_SECRET_KEY) {
-  console.error("❌ ERROR: Falta RECAPTCHA_SECRET_KEY en el archivo .env");
+  console.error("❌ ERROR: Falta STRIPE_SECRET_KEY en el archivo .env");
   process.exit(1);
 }
 

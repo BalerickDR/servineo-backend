@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
-import { Jobspay } from './../../models/jobsPayment.model';
-import { User } from '../../models/userPayment.model';
+// 🟢 CORRECCIÓN: Usamos tu modelo local 'jobs.model' para asegurar compatibilidad con la BD
+import Jobspay from '../../models/jobs.model';
+import User from '../../models/userPayment.model';
 
 // =========================
 // Listar trabajos de usuario (solo requester)
@@ -45,13 +46,16 @@ export const listJobs = async (req: Request, res: Response): Promise<void> => {
     console.log('🟢 Rol verificado: requester');
 
     // 4️⃣ Buscar trabajos donde el usuario sea el solicitante
+    // Usamos el modelo Jobspay (que viene de jobs.model)
     console.log('🧾 Buscando trabajos asociados al requester...');
     const jobs = await Jobspay.find({ requesterId: userId });
 
-    // 5️⃣ Si no hay trabajos, devolver mensaje
+    // 5️⃣ Si no hay trabajos, devolver array vacío (Status 200)
+    // CAMBIO IMPORTANTE: No devolver 404 si es un array vacío, devolver [],
+    // para que el frontend no lance error "Error al obtener trabajos".
     if (!jobs || jobs.length === 0) {
-      console.log('📭 No se encontraron trabajos para este usuario');
-      res.status(404).json({ message: 'No se encontraron trabajos para este usuario' });
+      console.log('📭 No se encontraron trabajos, devolviendo lista vacía.');
+      res.status(200).json([]); 
       return;
     }
 
