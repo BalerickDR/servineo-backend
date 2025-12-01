@@ -16,7 +16,7 @@ import { filterOffers as advancedFilterOffers } from './jobOfert/advancedFilter.
 export type OfferFilterOptions = {
   ranges?: string[];
   city?: string;
-  cities?: string[]; // Agregado del repo general
+  cities?: string[];
   categories?: string[];
   search?: string;
   sortBy?: string | SortCriteria;
@@ -36,7 +36,7 @@ export type OfferFilterOptions = {
 };
 
 // ============================================
-// CONFIGURACIÓN DE CACHÉ (Del repo general)
+// MEJORA AGREGADA: Caché para rangos de precios
 // ============================================
 let priceRangesCache: {
   data: any;
@@ -69,7 +69,7 @@ export const getOffersFiltered = async (options?: OfferFilterOptions) => {
     filterQuery = standardFilterOffers(options);
   }
 
-  // 2. LÓGICA DE BÚSQUEDA POR TEXTO (SEARCH)
+  // 2. LÓGICA DE BÚSQUEDA POR TEXTO (SEARCH) - ¡UNIFICADA Y CORREGIDA!
   let searchQuery: any = {};
 
   if (options.search) {
@@ -107,13 +107,13 @@ export const getOffersFiltered = async (options?: OfferFilterOptions) => {
     }
   }
 
-  // 3.2. Lógica para filtro de CALIFICACIÓN (MEJORADA del repo general)
+  // 3.2. Lógica para filtro de CALIFICACIÓN (CORREGIDA)
   if (options && typeof options.rating === 'number' && !isNaN(options.rating)) {
     const star = options.rating;
 
-    // Si es un número entero (viene del filtro de estrellas básico, ej: 4 estrellas)
+    // Si es un número entero (viene del filtro de estrellas básico)
     if (Number.isInteger(star) && star >= 1 && star <= 5) {
-      // Busca rango [4.0, 5.0)
+      // Lógica del filtro BÁSICO (Rango [N.0, (N+1).0))
       const minRating = star;
       const maxRatingExclusive = star + 1;
 
@@ -121,8 +121,9 @@ export const getOffersFiltered = async (options?: OfferFilterOptions) => {
         rating: { $gte: minRating, $lt: maxRatingExclusive },
       });
     }
-    // Si es un decimal específico (viene de la búsqueda avanzada o un filtro exacto)
+    // Si es un decimal (viene de la búsqueda avanzada o un filtro exacto)
     else if (star >= 1.0 && star <= 5.9) {
+      // Lógica del filtro AVANZADO (Comparación exacta)
       filterQuery = FilterCommon.combine(filterQuery, { rating: star });
     }
   }
@@ -143,7 +144,7 @@ export const getOffersFiltered = async (options?: OfferFilterOptions) => {
  */
 export const getPriceRanges = async (buckets = 4, includeExtremes = true) => {
   // ============================================
-  // MEJORA: Verificar caché primero
+  // MEJORA AGREGADA: Verificar caché primero
   // ============================================
   const now = Date.now();
   if (priceRangesCache && (now - priceRangesCache.timestamp) < CACHE_DURATION) {
@@ -161,30 +162,33 @@ export const getPriceRanges = async (buckets = 4, includeExtremes = true) => {
     },
   ]);
 
-  // Función auxiliar para guardar en caché y retornar
-  const cacheAndReturn = (result: any) => {
+  if (!agg || agg.length === 0) {
+    const result = { min: null, max: null, ranges: [] };
+    // MEJORA: Guardar en caché
     priceRangesCache = { data: result, timestamp: now };
     return result;
-  };
-
-  if (!agg || agg.length === 0) {
-    return cacheAndReturn({ min: null, max: null, ranges: [] });
   }
 
   const min = agg[0].min as number;
   const max = agg[0].max as number;
 
   if (min == null || max == null) {
-    return cacheAndReturn({ min: null, max: null, ranges: [] });
+    const result = { min: null, max: null, ranges: [] };
+    // MEJORA: Guardar en caché
+    priceRangesCache = { data: result, timestamp: now };
+    return result;
   }
 
   if (min === max) {
     const one = Math.floor(min);
-    return cacheAndReturn({
+    const result = {
       min: one,
       max: one,
       ranges: [{ label: `= $${one}`, min: one, max: one }],
-    });
+    };
+    // MEJORA: Guardar en caché
+    priceRangesCache = { data: result, timestamp: now };
+    return result;
   }
 
   // Algoritmo de cálculo de rangos
@@ -239,7 +243,16 @@ export const getPriceRanges = async (buckets = 4, includeExtremes = true) => {
   }
 
   const result = { min, max, ranges };
-  return cacheAndReturn(result);
+  // MEJORA: Guardar en caché
+  priceRangesCache = { data: result, timestamp: now };
+  return result;
+};
+
+// ============================================
+// MEJORA AGREGADA: Función para limpiar caché manualmente
+// ============================================
+export const clearPriceRangesCache = () => {
+  priceRangesCache = null;
 };
 
 // ============================================

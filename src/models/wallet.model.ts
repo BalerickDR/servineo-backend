@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, model, models } from 'mongoose';
+import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IWallet extends Document {
   users_id: mongoose.Types.ObjectId;

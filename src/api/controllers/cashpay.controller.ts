@@ -25,29 +25,31 @@ function generateRandomCode(length: number = 6): string {
 // POST /lab/payments - Crear pago
 // ============================================
 export const createPaymentLab = async (req: Request, res: Response) => {
-  console.log("[createPaymentLab] Iniciando proceso...");
+  console.log('[createPaymentLab] Iniciando proceso...');
 
   try {
     const {
       jobId,
       requesterId,
       fixerId,
-      paymentMethods = "cash",
+      paymentMethods = 'cash',
       subTotal,
       service_fee = 0,
       discount = 0,
-      currency = "BOB",
+      currency = 'BOB',
       commissionRate = 0.05,
     } = req.body ?? {};
 
     // ===== VALIDACIONES BÁSICAS (Del General - Más estrictas) =====
     if (!jobId || !mongoose.isValidObjectId(jobId)) {
-      return res.status(400).json({ error: "jobId requerido y válido" });
+      return res.status(400).json({ error: 'jobId requerido y válido' });
     }
     if (!requesterId || !mongoose.isValidObjectId(requesterId)) {
       return res.status(400).json({ error: 'requesterId requerido y válido' });
+      return res.status(400).json({ error: 'requesterId requerido y válido' });
     }
     if (!fixerId || !mongoose.isValidObjectId(fixerId)) {
+      return res.status(400).json({ error: 'fixerId requerido y válido' });
       return res.status(400).json({ error: 'fixerId requerido y válido' });
     }
 
@@ -61,7 +63,7 @@ export const createPaymentLab = async (req: Request, res: Response) => {
     if (!fixer) return res.status(404).json({ error: "Fixer no encontrado" });
 
     // ===== VALIDAR ROLES =====
-    if (requester.role !== "requester") {
+    if (requester.role !== 'requester') {
       return res.status(400).json({ error: "El pagador debe tener rol 'requester'" });
     }
     if (fixer.role !== "fixer") {
@@ -74,8 +76,8 @@ export const createPaymentLab = async (req: Request, res: Response) => {
     const nDisc = Number(discount);
 
     if ([nSub, nFee, nDisc].some(Number.isNaN)) {
-      return res.status(400).json({ 
-        error: "subTotal, service_fee y discount deben ser numéricos" 
+      return res.status(400).json({
+        error: 'subTotal, service_fee y discount deben ser numéricos',
       });
     }
 
@@ -86,16 +88,16 @@ export const createPaymentLab = async (req: Request, res: Response) => {
 
     const nComm = Number(commissionRate);
     if (Number.isNaN(nComm) || nComm < 0 || nComm > 1) {
-      return res.status(400).json({ 
-        error: "commissionRate debe estar entre 0 y 1" 
+      return res.status(400).json({
+        error: 'commissionRate debe estar entre 0 y 1',
       });
     }
 
     // ===== VALIDAR MÉTODO DE PAGO =====
     const method = paymentMethods.toLowerCase();
-    if (!["cash", "qr", "card"].includes(method)) {
-      return res.status(400).json({ 
-        error: "paymentMethods debe ser: cash, qr o card" 
+    if (!['cash', 'qr', 'card'].includes(method)) {
+      return res.status(400).json({
+        error: 'paymentMethods debe ser: cash, qr o card',
       });
     }
 
@@ -107,9 +109,9 @@ export const createPaymentLab = async (req: Request, res: Response) => {
     }
 
     // ===== VALIDACIÓN ESPECÍFICA PARA EFECTIVO =====
-    if (method === "cash" && (total < 10 || total >= 5000)) {
-      return res.status(400).json({ 
-        error: "Pago en efectivo solo entre 10 y 5000 Bs." 
+    if (method === 'cash' && (total < 10 || total >= 5000)) {
+      return res.status(400).json({
+        error: 'Pago en efectivo solo entre 10 y 5000 Bs.',
       });
     }
 
@@ -118,11 +120,11 @@ export const createPaymentLab = async (req: Request, res: Response) => {
     // ==========================================================
     if (method === "cash") {
       console.log(`[createPaymentLab] Buscando pago en efectivo PENDIENTE para jobId: ${jobId}`);
-      
+
       const existingPendingPayment = await Payment.findOne({
         jobId: new mongoose.Types.ObjectId(jobId),
-        paymentMethods: "cash",
-        status: "pending"
+        paymentMethods: 'cash',
+        status: 'pending',
       });
 
       if (existingPendingPayment) {
@@ -138,7 +140,7 @@ export const createPaymentLab = async (req: Request, res: Response) => {
             status: existingPendingPayment.status,
             expiresAt: existingPendingPayment.codeExpiresAt,
             paymentMethod: existingPendingPayment.paymentMethods,
-          }
+          },
         });
       }
       console.log(`[createPaymentLab] No se encontraron pagos pendientes. Creando uno nuevo...`);
@@ -155,7 +157,7 @@ export const createPaymentLab = async (req: Request, res: Response) => {
       payerId: new mongoose.Types.ObjectId(requesterId),
       fixerId: new mongoose.Types.ObjectId(fixerId),
       paymentMethods: method,
-      status: "pending",
+      status: 'pending',
       commissionRate: nComm,
       code,
       codeExpiresAt,
@@ -196,7 +198,7 @@ export const createPaymentLab = async (req: Request, res: Response) => {
         status: doc.status,
         expiresAt: doc.codeExpiresAt,
         paymentMethod: doc.paymentMethods,
-      }
+      },
     });
 
   } catch (e: unknown) {
@@ -213,7 +215,7 @@ export const createPaymentLab = async (req: Request, res: Response) => {
       error: (e as Error)?.message || "Error creando pago" 
     });
   }
-}
+};
 
 // ============================================
 // POST /lab/payments/:id/regenerate-code - Regenerar código
@@ -223,17 +225,19 @@ export const regeneratePaymentCode = async (req: Request, res: Response) => {
     const { id } = req.params as { id: string };
 
     if (!id || !mongoose.isValidObjectId(id)) {
-      return res.status(400).json({ error: "id inválido" });
+      return res.status(400).json({ error: 'id inválido' });
     }
 
     const payment = await Payment.findById(id);
     if (!payment) {
-      return res.status(404).json({ error: "pago no encontrado" });
+      return res.status(404).json({ error: 'pago no encontrado' });
     }
 
     const status = String(payment.status).toLowerCase();
-    if (status !== "pending") {
-      return res.status(400).json({ error: "solo se puede regenerar código para pagos pendientes" });
+    if (status !== 'pending') {
+      return res
+        .status(400)
+        .json({ error: 'solo se puede regenerar código para pagos pendientes' });
     }
 
     // Generar nuevo código y nueva expiración
@@ -246,7 +250,7 @@ export const regeneratePaymentCode = async (req: Request, res: Response) => {
     await payment.save();
 
     return res.json({
-      message: "código regenerado correctamente",
+      message: 'código regenerado correctamente',
       data: {
         id: payment._id,
         code: payment.code,
@@ -261,8 +265,8 @@ export const regeneratePaymentCode = async (req: Request, res: Response) => {
     }
     if (error instanceof MongoServerError && error.code === 11000) {
       // Colisión de código único
-      return res.status(409).json({ error: "conflicto de código, intente nuevamente" });
+      return res.status(409).json({ error: 'conflicto de código, intente nuevamente' });
     }
     return res.status(500).json({ error: error?.message || "Error regenerando código" });
   }
-}
+};

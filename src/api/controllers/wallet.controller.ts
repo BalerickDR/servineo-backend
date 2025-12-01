@@ -217,6 +217,7 @@ export const rechargeWallet = async (req: Request, res: Response) => {
       return res.status(500).json({
         message: 'Recarga procesada pero fallo al registrar la transacción',
         error: (rechargeError as Error).message,
+        error: (rechargeError as Error).message,
         wallet,
       });
     }

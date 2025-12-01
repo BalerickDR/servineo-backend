@@ -70,6 +70,6 @@ jobSchema.index({ department: 1, jobType: 1 });
 jobSchema.index({ fixerName: 1, department: 1 });
 
 // Evitar recompilación del modelo
-const JobModel = models.Job || model('Job', jobSchema, 'filter');
+const JobModel = models.Job || model('Job', jobSchema, 'offers');
 
 export const Job = JobModel;

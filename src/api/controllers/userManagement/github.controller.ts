@@ -99,7 +99,48 @@ export async function githubAuth(req: Request, res: Response) {
       `);
     }
 
- 
+    if (mode === "login-only") {
+      console.log("🔐 Modo LOGIN-ONLY detectado");
+
+      const dbUser = await findUserByEmail(githubUser.email);
+
+      if (!dbUser) {
+        // Usuario NO existe → avisamos al frontend de login
+        return res.send(`
+          <script>
+            window.opener.postMessage({
+              type: 'GITHUB_AUTH_ERROR',
+              message: 'Usuario no registrado. Por favor regístrate.'
+            }, '${FRONTEND_URL}');
+            window.close();
+          </script>
+        `);
+      }
+
+      const sessionToken = generarToken(
+        dbUser._id.toHexString(),
+        dbUser.name,
+        dbUser.email
+      );
+
+      return res.send(`
+        <script>
+          window.opener.postMessage({
+            type: 'GITHUB_AUTH_SUCCESS',
+            token: '${sessionToken}',
+            isFirstTime: false,
+            user: ${JSON.stringify({
+              id: dbUser._id.toHexString(),
+              name: dbUser.name,
+              email: dbUser.email,
+              photo: dbUser.url_photo || null,
+            })}
+          }, '${FRONTEND_URL}');
+          window.close();
+        </script>
+      `);
+    }
+    
     let dbUser = await findUserByEmail(githubUser.email);
     let isFirstTime = false;
 

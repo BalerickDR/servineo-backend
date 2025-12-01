@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const jobSchema = new mongoose.Schema({
   title: String,
@@ -16,5 +16,4 @@ const jobSchema = new mongoose.Schema({
   type: String,
 });
 
-export const User = mongoose.models.User || mongoose.model("jobspays", jobSchema);
-
+export const Jobspay = mongoose.models.User || mongoose.model('jobspays', jobSchema);

@@ -17,10 +17,13 @@ devWalletRouter.get('/dbinfo', async (_req: Request, res: Response) => {
   }
 
   const name = mongoose.connection.name;
+  if (!mongoose.connection.db) return res.status(500).json({ error: 'Database not connected' });
   const cols = await mongoose.connection.db.listCollections().toArray();
+
 
   res.json({
     db: name,
+    collections: cols.map((c) => c.name),
     collections: cols.map((c) => c.name),
     walletMode: process.env.WALLET_STORAGE_MODE,
     walletsCollection: process.env.WALLETS_COLLECTION,
@@ -37,6 +40,7 @@ devWalletRouter.get('/wallet/find-by-email', async (req: Request, res: Response)
 
   const email = String(req.query.email || '').trim();
   if (!email) return res.status(400).json({ error: 'EMAIL_REQUIRED' });
+  if (!mongoose.connection.db) return res.status(500).json({ error: 'Database not connected' });
 
   // Usamos la conexión nativa para una búsqueda rápida sin Mongoose Model overhead
   const doc = await mongoose.connection.db

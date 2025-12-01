@@ -1,45 +1,95 @@
+import { Request, Response } from 'express';
+import Device from '../../../models/divice.model';
 
-import { Request, Response } from "express";
-import { Device } from "../../../models/divice.model";
-
-export const registerDevice = async (req: Request, res: Response) => {
+// Registrar o actualizar un dispositivo
+export const registrarDispositivo = async (req: Request, res: Response) => {
   try {
-    const { userId, os } = req.body;
+    const { userId, os, type } = req.body;
+    const userAgent = req.body.userAgent || req.headers["user-agent"] || "unknown";
 
-    if (!userId || !os) {
-      return res.status(400).json({ message: "Faltan datos del dispositivo." });
+    if (!userId || !os || !type) {
+      return res.status(400).json({ message: "Faltan datos requeridos" });
     }
 
-    const devices = await Device.find({ userId });
+    // Buscar dispositivo por userId y userAgent (más confiable)
+    let dispositivo = await Device.findOne({ userId, userAgent });
 
-    // Limitar a 3 dispositivos
-    if (devices.length >= 3) {
-      return res.status(403).json({ message: "Máximo de 3 dispositivos alcanzado." });
+    if (dispositivo) {
+      // Ya existe → solo actualizar lastLogin
+      dispositivo.lastLogin = new Date();
+      await dispositivo.save();
+
+      return res.json({
+        message: "Dispositivo actualizado",
+        dispositivo,
+      });
     }
 
-    // Buscar si ya existe un registro con el mismo OS
-    const existingDevice = devices.find((d) => d.os === os);
+    // Crear uno nuevo
+    dispositivo = new Device({
+      userId,
+      os,
+      type,
+      userAgent,
+      lastLogin: new Date(),
+    });
 
-    if (existingDevice) {
-      existingDevice.lastLogin = new Date();
-      await existingDevice.save();
-      return res.json({ message: "Dispositivo actualizado." });
-    }
+    await dispositivo.save();
 
-    await Device.create({ userId, os, lastLogin: new Date() });
-    res.json({ message: "Dispositivo registrado exitosamente." });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error interno al registrar dispositivo." });
+    res.json({
+      message: "Dispositivo registrado",
+      dispositivo,
+    });
+
+  } catch (err) {
+    console.error("Error registrarDispositivo:", err);
+    res.status(500).json({ message: "Error interno del servidor" });
   }
 };
 
-export const getDevices = async (req: Request, res: Response) => {
+// Obtener dispositivos de un usuario
+export const obtenerDispositivos = async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const devices = await Device.find({ userId });
-    res.json(devices);
-  } catch (error) {
-    res.status(500).json({ message: "Error al obtener dispositivos." });
+    const dispositivos = await Device.find({ userId }).sort({ lastLogin: -1 });
+    res.json(dispositivos);
+  } catch (err) {
+    console.error('Error obtenerDispositivos:', err);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+// Eliminar todas las sesiones excepto la actual
+export const eliminarTodasExceptoActual = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { except } = req.body;
+
+    if (!userId) return res.status(400).json({ message: "Falta userId" });
+
+    await Device.deleteMany({
+      userId,
+      _id: { $ne: except },
+    });
+
+    res.json({
+      message: "Todas las sesiones eliminadas excepto la actual",
+    });
+  } catch (err) {
+    console.error('Error eliminarTodasExceptoActual:', err);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+};
+
+// Eliminar un solo dispositivo
+export const eliminarDispositivo = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await Device.findByIdAndDelete(id);
+
+    res.json({ message: 'Dispositivo eliminado' });
+  } catch (err) {
+    console.error('Error eliminarDispositivo:', err);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 };

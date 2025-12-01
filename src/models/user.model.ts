@@ -1,11 +1,11 @@
 import { Schema, model, models, Document, Types } from "mongoose";
 
 export interface IUser extends Document {
-  _id: Types.ObjectId;
   name: string;
   email: string;
-  url_photo?: string; 
+  url_photo?: string;
   role: string;
+  description?: string;
 
   authProviders?: Array<{
     provider: string;
@@ -39,10 +39,6 @@ export interface IUser extends Document {
     tarjetaCredito?: boolean;
   };
 
-  experience?: {
-    descripcion?: string;
-  };
-
   workLocation?: {
     lat?: number;
     lng?: number;
@@ -50,8 +46,6 @@ export interface IUser extends Document {
     departamento?: string;
     pais?: string;
   };
-
-  stripeCustomerId?: string; // ⚡ Campo nuevo para Stripe
 }
 
 const userSchema = new Schema<IUser>(
@@ -93,6 +87,7 @@ const userSchema = new Schema<IUser>(
     },
 
     ci: { type: String },
+    description: { type: String },
 
     servicios: [{ type: String }],
 
@@ -111,10 +106,6 @@ const userSchema = new Schema<IUser>(
       tarjetaCredito: { type: Boolean, default: false },
     },
 
-    experience: {
-      descripcion: { type: String },
-    },
-
     workLocation: {
       lat: { type: Number },
       lng: { type: Number },
@@ -122,8 +113,6 @@ const userSchema = new Schema<IUser>(
       departamento: { type: String },
       pais: { type: String },
     },
-
-    stripeCustomerId: { type: String }, // ⚡ Agregado
   },
   {
     collection: "users",

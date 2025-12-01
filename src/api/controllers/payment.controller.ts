@@ -9,7 +9,13 @@ import 'dotenv/config';
 
 // 1. Validar claves al inicio
 if (!process.env.STRIPE_SECRET_KEY) {
-  console.error("❌ ERROR: Falta STRIPE_SECRET_KEY en el archivo .env");
+  console.error('❌ ERROR: Falta STRIPE_SECRET_KEY en el archivo .env');
+  process.exit(1);
+}
+
+const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY;
+if (!RECAPTCHA_SECRET_KEY) {
+  console.error("❌ ERROR: Falta RECAPTCHA_SECRET_KEY en el archivo .env");
   process.exit(1);
 }
 
@@ -85,17 +91,17 @@ export const createPayment = async (req: Request, res: Response) => {
 
     // --- VALIDACIONES BÁSICAS ---
     if (!requesterId || !fixerId || !jobId || !amount) {
-      console.error("❌ Faltan datos obligatorios en la solicitud");
-      return res.status(400).json({ error: "Faltan datos obligatorios" });
+      console.error('❌ Faltan datos obligatorios en la solicitud');
+      return res.status(400).json({ error: 'Faltan datos obligatorios' });
     }
 
     if (isNaN(amount) || amount <= 0) {
-      console.error("❌ El monto debe ser un número positivo");
-      return res.status(400).json({ error: "El monto debe ser un número positivo" });
+      console.error('❌ El monto debe ser un número positivo');
+      return res.status(400).json({ error: 'El monto debe ser un número positivo' });
     }
 
     // --- BUSCAR USUARIOS ---
-    console.log("🔍 Buscando requester y fixer...");
+    console.log('🔍 Buscando requester y fixer...');
     const [requester, fixer] = await Promise.all([
       User.findById(requesterId),
       User.findById(fixerId),
@@ -103,12 +109,12 @@ export const createPayment = async (req: Request, res: Response) => {
 
     if (!requester) {
       console.error(`❌ Requester ${requesterId} no encontrado`);
-      return res.status(404).json({ error: "Requester no encontrado" });
+      return res.status(404).json({ error: 'Requester no encontrado' });
     }
 
     if (!fixer) {
       console.error(`❌ Fixer ${fixerId} no encontrado`);
-      return res.status(404).json({ error: "Fixer no encontrado" });
+      return res.status(404).json({ error: 'Fixer no encontrado' });
     }
 
     // Validar roles
@@ -122,13 +128,16 @@ export const createPayment = async (req: Request, res: Response) => {
     // --- CREAR CLIENTE STRIPE SI NO EXISTE ---
     let customerId = requester.stripeCustomerId;
     if (!customerId) {
-      console.log("🆕 Creando nuevo cliente Stripe...");
+      console.log('🆕 Creando nuevo cliente Stripe...');
       const customer = await stripe.customers.create({
         email: requester.email,
         name: requester.name,
       });
+
+      // Guardamos el ID en el usuario
       requester.stripeCustomerId = customer.id;
       await requester.save();
+
       customerId = customer.id;
       console.log(`✅ Cliente Stripe creado: ${customerId}`);
     } else {
@@ -137,35 +146,40 @@ export const createPayment = async (req: Request, res: Response) => {
 
     // --- OBTENER MÉTODO DE PAGO ---
     let stripePaymentMethodId;
+
     if (cardId) {
-      console.log("💳 Buscando tarjeta por ID...");
+      console.log('💳 Buscando tarjeta por ID...');
       const card = await Card.findById(cardId);
       if (!card) {
         return res.status(404).json({ error: "Card no encontrada" });
       }
+      // Convertimos a string para asegurar comparación correcta
       if (card.userId.toString() !== requesterId.toString()) {
         return res.status(400).json({ error: "La tarjeta no pertenece al requester" });
       }
       stripePaymentMethodId = card.stripePaymentMethodId;
     } else if (paymentMethodId) {
       stripePaymentMethodId = paymentMethodId;
-      console.log("💳 Usando paymentMethodId temporal del frontend");
+      console.log('💳 Usando paymentMethodId temporal del frontend');
     } else {
       return res.status(400).json({ error: "No se proporcionó tarjeta ni PaymentMethod" });
     }
 
     // --- CREAR INTENTO DE PAGO ---
-    console.log("🚀 Creando PaymentIntent en Stripe...");
+    console.log('🚀 Creando PaymentIntent en Stripe...');
     let paymentIntent;
 
     try {
       paymentIntent = await stripe.paymentIntents.create({
-        amount: Math.round(amount * 100),
-        currency: "BOB",
+        amount: Math.round(amount * 100), // Stripe usa centavos
+        currency: 'BOB',
         customer: customerId,
         payment_method: stripePaymentMethodId,
-        confirm: true,
-        automatic_payment_methods: { enabled: true, allow_redirects: "never" },
+        confirm: true, // Intenta cobrar inmediatamente
+        automatic_payment_methods: {
+          enabled: true,
+          allow_redirects: 'never', // Importante para evitar flujos de 3D Secure complejos sin frontend preparado
+        },
       });
       console.log("✅ PaymentIntent creado:", paymentIntent.id, "Estado:", paymentIntent.status);
     } catch (stripeError: unknown) {
@@ -177,7 +191,7 @@ export const createPayment = async (req: Request, res: Response) => {
     }
 
     // --- GUARDAR PAGO EN MONGODB ---
-    console.log("🗃️ Guardando información del pago en MongoDB...");
+    console.log('🗃️ Guardando información del pago en MongoDB...');
     const paymentData = await Payment.create({
       requesterId,
       fixerId,
@@ -185,11 +199,9 @@ export const createPayment = async (req: Request, res: Response) => {
       cardId: cardId || null,
       temporaryPaymentMethodId: cardId ? null : paymentMethodId,
       amount,
-      status: paymentIntent.status === "succeeded" ? "paid" : "pending",
+      status: paymentIntent.status === 'succeeded' ? 'paid' : 'pending',
       paymentIntentId: paymentIntent.id,
     });
-
-    console.log(`✅ Pago guardado correctamente con estado '${paymentData.status}'`);
 
     // --- ACTUALIZAR ESTADO DEL TRABAJO ---
     const job = await Job.findById(jobId);
@@ -201,11 +213,11 @@ export const createPayment = async (req: Request, res: Response) => {
       console.error(`⚠️ Trabajo con ID ${jobId} no encontrado`);
     }
 
-    console.timeEnd("⏱ Duración total del proceso");
+    console.timeEnd('⏱ Duración total del proceso');
     console.groupEnd();
 
     return res.json({
-      message: "✅ Pago procesado correctamente",
+      message: '✅ Pago procesado correctamente',
       payment: paymentData,
     });
 

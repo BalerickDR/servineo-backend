@@ -1,9 +1,9 @@
 import { Router } from 'express';
 import { actualizarFotoPerfil } from '../../controllers/userManagement/fotoPefil.controller';
+import { uploadImage } from '../../../middlewares/uploads';
 
 const router = Router();
 
-// PUT porque estamos actualizando un dato existente
-router.put('/usuarios/foto', actualizarFotoPerfil);
+router.put('/usuarios/foto', uploadImage, actualizarFotoPerfil);
 
 export default router;

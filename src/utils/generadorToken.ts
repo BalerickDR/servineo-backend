@@ -6,14 +6,10 @@ export function generarToken(
   id: string,
   name: string,
   email: string,
-  picture?: string, // Puedes dejar el argumento si lo usas en otro lado, pero no lo metas al payload
+  picture?: string,
   expiresIn: SignOptions["expiresIn"] = "7d"
 ): string {
-  
-  // ✅ CORRECCIÓN: Quitamos 'picture' del payload.
-  // El token ahora será ligero y rápido.
-  const payload = { id, name, email }; 
-  
+  const payload = { id, name, email, picture };
   return jwt.sign(payload, JWT_SECRET, { expiresIn });
 }
 

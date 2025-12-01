@@ -11,6 +11,11 @@ interface DiscordUser {
 }
 
 
+export async function verifyDiscordToken(token: string): Promise<DiscordUser | null> {
+  // aquí 'token' es el accessToken de Discord
+  return await getDiscordUser(token);
+}
+
  //Obtener datos del usuario desde Discord API
 export async function getDiscordUser(accessToken: string): Promise<DiscordUser | null> {
   const resp = await fetch("https://discord.com/api/users/@me", {

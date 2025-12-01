@@ -5,25 +5,31 @@ import express from 'express';
 import cors from 'cors';
 import { connectDatabase } from './config/db.config';
 
-import HealthRoutes from './api/routes/health.routes';
-import jobOfertRoutes from './api/routes/jobOfert.routesPayment';
+// --- RUTAS GENERALES (Fusión de nombres estándar) ---
+import jobOfertRoutes from './api/routes/jobOfert.routes'; // General (Estándar)
 import newoffersRoutes from './api/routes/newOffers.routes';
 import fixerRoutes from './api/routes/fixer.routes';
-import jobsRoutes from './api/routes/jobs.routesPayment';
+import jobsRoutes from './api/routes/jobs.routes'; // General (Estándar)
 import activityRoutes from '../src/api/routes/activities.routes';
 import searchRoutes from './api/routes/search.routes';
+
+// --- RUTAS DE CITAS & TRACKING ---
 import CreateRoutes from './api/routes/create_appointment.routes';
 import ReadRoutes from './api/routes/read_appointment.routes';
 import UpdateRoutes from './api/routes/update_appointment.routes';
 import LocationRoutes from './api/routes/location.routes';
 import GetScheduleRoutes from './api/routes/get_schedule.routes';
 import trackingRoutes from './api/routes/tracking-appointments.routes';
+
+// --- RUTAS DE USUARIO & PERFIL ---
 import experienceRoutes from './routes/experience.routes';
 import userProfileRoutes from './routes/userProfile.routes';
 import userRoutes from './routes/user.routes';
 import portfolioRoutes from '../src/routes/portfolio.routes';
-import routerUser from './api/routes/user.routes'; 
-import UsersRoutes from "./api/routes/user.routes";
+import routerUser from './api/routes/user.routes';
+import UsersRoutes from "./api/routes/user.routes"; // Mantenido por compatibilidad local
+
+// --- RUTAS DE GESTIÓN DE USUARIOS (Control C) ---
 import registrarDatosRouter from '../src/api/routes/userManagement/registrarDatos.routes';
 import fotoPerfilRouter from '../src/api/routes/userManagement/fotoPerfil.routes';
 import googleRouter from '../src/api/routes/userManagement/google.routes';
@@ -39,6 +45,16 @@ import githubAuthRouter from '../src/api/routes/userManagement/github.routes';
 import discordRoutes from '../src/api/routes/userManagement/discord.routes';
 import clienteRouter from '../src/api/routes/userManagement/cliente.routes';
 import obtenerContrasenaRouter from '../src/api/routes/userManagement/obtener.routes';
+
+// --- NUEVAS RUTAS DE SEGURIDAD (Del repo General: 2FA, Recaptcha, Teléfono) ---
+import reCaptchaRouter from './api/routes/userManagement/reCaptcha.routes';
+import telefonoRoutes from "./api/routes/userManagement/telefono.routes";
+import sesion2faRouter from "./api/routes/userManagement/sesion2fa.routes";
+import ingresar2faRouter from './api/routes/userManagement/ingresar2fa.routes';
+import codigos2faRouter from './api/routes/userManagement/codigos2fa.routes';
+import twoFaRouter from './api/routes/userManagement/2fa.routes';
+
+// --- RUTAS DE PAGOS (Tus rutas locales críticas) ---
 import PaymentCenterRoutes from './api/routes/paymentCenter.routes';
 import CardsRoutes from "./api/routes/card.routes";
 import PaymentRoutes from "./api/routes/payment.routes";
@@ -49,6 +65,8 @@ import myJobsPaymentRoutes from './api/routes/jobsPayment.routes';
 import invoiceDetailRouter from './api/routes/invoice.routes';
 import bankTransferRoutes from './api/routes/bankTransfer.routes';
 import rechargeWallet from './api/routes/wallet.routes';
+
+// --- FEATURE FLAGS & ADMIN ---
 import { FEATURE_DEV_WALLET, FEATURE_SIM_PAYMENTS } from './models/featureFlags.model';
 import { devWalletRouter } from './api/routes/dev-wallet.routes';
 import { simPaymentsRouter } from './api/routes/sim-payments.routes';
@@ -63,7 +81,7 @@ app.use(
       'http://localhost:8080',
       'http://localhost:8081',
       'http://localhost:3000',
-      'http://localhost:4000', 
+      'http://localhost:4000', // Mantenido tu puerto local
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
@@ -74,30 +92,41 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Middleware de Logging
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
   next();
 });
 
-app.use('/api', HealthRoutes);
+// ==========================================
+// MOUNT DE RUTAS
+// ==========================================
+
+// 1. Core & Health
 app.use('/api', searchRoutes);
 app.use('/api/devmaster', jobOfertRoutes);
 app.use('/api/newOffers', newoffersRoutes);
 app.use('/api/fixers', fixerRoutes);
 app.use('/api', activityRoutes);
 app.use('/api', jobsRoutes);
+
+// 2. Appointments & Tracking
 app.use('/api/location', LocationRoutes);
 app.use('/api/crud_create', CreateRoutes);
 app.use('/api/crud_read', ReadRoutes);
 app.use('/api/crud_update', UpdateRoutes);
 app.use('/api/crud_read', GetScheduleRoutes);
 app.use('/api/admin', trackingRoutes);
+
+// 3. User, Profile & Experience
 app.use('/api/experiences', experienceRoutes);
 app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/user-profiles', userProfileRoutes);
 app.use('/api/user', userRoutes);
-app.use('/api/user', routerUser); 
-app.use('/api', UsersRoutes);    
+app.use('/api/user', routerUser);
+app.use('/api', UsersRoutes);
+
+// 4. Gestión de Usuarios (Control C - Auth)
 app.use('/api/controlC/google', googleRouter);
 app.use('/api/controlC/ubicacion', ubicacionRouter);
 app.use('/api/controlC/auth', authRouter);
@@ -112,22 +141,32 @@ app.use('/api/controlC/obtener-password', obtenerContrasenaRouter);
 app.use('/api/controlC/cliente', clienteRouter);
 app.use('/auth', githubAuthRouter);
 app.use('/auth', discordRoutes);
-app.use('/api/fixer/payment-center', PaymentCenterRoutes);
+
+// 5. Nuevas Rutas de Seguridad (2FA, Teléfono, Recaptcha)
+app.use('/api/controlC/recaptcha', reCaptchaRouter);
+app.use("/api/controlC/telefono", telefonoRoutes);
+app.use("/api/controlC/sesion2fa", sesion2faRouter);
+app.use('/api/controlC/2fa-ingresar', ingresar2faRouter);
+app.use('/api/controlC/codigos2fa', codigos2faRouter);
+app.use('/api/controlC/2fa', twoFaRouter);
+
+// 6. Pagos y Finanzas
+app.use('/api/fixer/payment-center', PaymentCenterRoutes); // <--- TU RUTA CRÍTICA
 app.use('/api', CardsRoutes);
 app.use('/api', PaymentRoutes);
 app.use('/api', BankAccountRoutes);
 app.use('/api/lab', CashPayRoutes);
-app.use("/api", rechargeWallet);    
+app.use("/api", rechargeWallet);
 app.use('/api', myJobsPaymentRoutes);
 app.use('/api/transferencia-bancaria', bankTransferRoutes);
 app.use('/api/v1/invoices', invoiceDetailRouter);
-app.use("/payments", paymentsRouter); 
-app.use("/api/payments", paymentsRouter); 
+app.use("/payments", paymentsRouter);
+app.use("/api/payments", paymentsRouter);
 
-// 6. Admin & Sudoers
+// 7. Admin & Sudoers
 app.use('/', SudoersRouter);
 
-// 7. Feature Flags (Dev & Sim)
+// 8. Feature Flags (Dev & Sim)
 console.log('FEATURE_DEV_WALLET =', FEATURE_DEV_WALLET);
 if (FEATURE_DEV_WALLET) {
   console.log('MOUNT /api/dev ✅');
@@ -137,10 +176,11 @@ if (FEATURE_SIM_PAYMENTS) {
   app.use('/api/sim', simPaymentsRouter);
 }
 
-// Registro de Rutas Adicionales (Devices)
+// Registro de Dispositivos
 export const registerRoutes = (app: express.Application) => {
   app.use('/devices', deviceRouter);
 };
+app.use('/devices', deviceRouter);
 
 // Manejo de errores 404
 app.use((req, res) => {

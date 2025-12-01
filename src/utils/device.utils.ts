@@ -1,8 +1,8 @@
-
 import UAParser from 'ua-parser-js';
 
 export const parseDevice = (userAgent: string) => {
-  const parser = new UAParser(userAgent);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const parser = new (UAParser as any)(userAgent);
 
   const os = parser.getOS();
   const browser = parser.getBrowser();

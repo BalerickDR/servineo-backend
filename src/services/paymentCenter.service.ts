@@ -59,7 +59,7 @@ export const findOrCreateWalletByUserId = async (userId: string) => {
 
   try {
     // 1. Intenta encontrar la wallet
-    let wallet = await Wallet.findOne({ users_id: userObjectId });
+    const wallet = await Wallet.findOne({ users_id: userObjectId });
 
     // 2. Si la wallet existe, devuélvela
     if (wallet) {

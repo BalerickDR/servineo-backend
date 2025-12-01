@@ -1,35 +1,38 @@
 import { Request, Response } from 'express';
+import fs from "fs";
 import { updateUserPhoto } from '../../../services/userManagement/fotoPerfil.service';
+import { uploadToGoogleDrive } from './googleDrive.service';
 
 export async function actualizarFotoPerfil(req: Request, res: Response) {
   try {
-    const { usuarioId, fotoPerfil } = req.body;
+    const { usuarioId } = req.body;
+    const archivo = req.file;
 
-    if (!usuarioId || !fotoPerfil) {
+    if (!usuarioId || !archivo) {
       return res.status(400).json({
         success: false,
-        message: 'Faltan datos: usuarioId o fotoPerfil.',
+        message: 'Faltan datos: usuarioId o archivo.',
       });
     }
 
-    const result = await updateUserPhoto(usuarioId, fotoPerfil);
+    const urlFoto = await uploadToGoogleDrive(archivo.path, archivo.filename);
 
-    if (!result) {
-      return res.status(404).json({
-        success: false,
-        message: 'Usuario no encontrado.',
-      });
-    }
+    fs.unlink(archivo.path, (err) => {
+      if (err) console.error("Error borrando archivo temporal:", err);
+    });
+    await updateUserPhoto(usuarioId, urlFoto);
 
     return res.status(200).json({
       success: true,
-      message: 'Foto de perfil actualizada correctamente.',
+      message: 'Foto actualizada.',
+      url: urlFoto
     });
+
   } catch (error) {
-    console.error('Error al actualizar la foto de perfil:', error);
+    console.error('Error:', error);
     return res.status(500).json({
       success: false,
-      message: 'Error interno del servidor al actualizar la foto.',
+      message: 'Error interno al subir foto.'
     });
   }
 }

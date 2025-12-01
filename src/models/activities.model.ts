@@ -75,7 +75,7 @@ export interface ActivityDoc {
     clickCount?: number;
     jobTitle?: string;
     jobId?: string | Types.ObjectId;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   timestamp: Date;
 }

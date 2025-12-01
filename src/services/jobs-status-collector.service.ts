@@ -96,7 +96,7 @@ async function findExistingDailyStatus(fixerId: string, date: Date): Promise<Act
 export async function collectJobsStatus(): Promise<void> {
   try {
     const now = new Date();
-    const boliviaNow = getBoliviaDate(now);
+    //const boliviaNow = getBoliviaDate(now);
     const startOfDay = getStartOfDayBolivia(now);
     const endOfDay = getEndOfDayBolivia(now);
 

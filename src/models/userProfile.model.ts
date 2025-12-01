@@ -42,9 +42,9 @@ export interface IUserProfile extends Document {
     }>;
     vehicle: {
         type: {
-            hasVehicle: { type: Boolean },
-            type?: String,
-            details?: String,
+            hasVehicle: { type: boolean },
+            type?: string,
+            details?: string,
         },
   required: false, 
 },

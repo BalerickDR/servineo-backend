@@ -1,6 +1,5 @@
-// servineo-backend/src/models/wallet/applyCommission.ts
-import { computeWalletFlags } from "./flags";
-import type { WalletModelAdapter } from "./adapter";
+import { computeWalletFlags } from './flags';
+import type { WalletModelAdapter, WalletSlice } from './adapter';
 import { logFlagChangeHuman } from './prettyLog';
 
 
@@ -11,19 +10,19 @@ import { logFlagChangeHuman } from './prettyLog';
 export async function applyCommissionToWallet(
   adapter: WalletModelAdapter,
   fixerId: string,
-  commission: number
+  commission: number,
 ) {
-  if (!fixerId) throw new Error("FIXER_ID_REQUIRED");
+  if (!fixerId) throw new Error('FIXER_ID_REQUIRED');
   const c = Math.max(0, Number(commission || 0));
 
   const current = await adapter.getWalletById(fixerId);
-  if (!current) throw new Error("FIXER_NOT_FOUND");
+  if (!current) throw new Error('FIXER_NOT_FOUND');
 
   const pre = Number(current.balance ?? 0);
   const post = +(pre - c).toFixed(2);
   const thr = Number(current.lowBalanceThreshold ?? 0);
 
-    const { nextFlags, state, changed, crossed } = computeWalletFlags({
+  const { nextFlags, state, changed, crossed } = computeWalletFlags({
     preBalance: pre,
     postBalance: post,
     lowBalanceThreshold: thr,
@@ -31,22 +30,21 @@ export async function applyCommissionToWallet(
   });
 
   // 🔊 Log solo si cambian los flags (incluye pasar a "ok")
- if (changed) {
-  logFlagChangeHuman({
-    fixerId,
-    pre,
-    post,
-    thr,
-    state,
-    crossed,
-    flags: nextFlags,
-    currency: 'BOB', // o quítalo si no quieres mostrarlo
-  });
-}
-
+  if (changed) {
+    logFlagChangeHuman({
+      fixerId,
+      pre,
+      post,
+      thr,
+      state,
+      crossed,
+      flags: nextFlags,
+      currency: 'BOB', // o quítalo si no quieres mostrarlo
+    });
+  }
 
   // marca auditoría básica si encendiste algo
-  const patch: any = {
+  const patch: Partial<WalletSlice> = {
     balance: post,
     flags: nextFlags,
   };
@@ -60,7 +58,7 @@ export async function applyCommissionToWallet(
     preBalance: pre,
     postBalance: post,
     threshold: thr,
-    state,            // "ok" | "low" | "critical"
+    state, // "ok" | "low" | "critical"
     flags: nextFlags, // para inspección en tests
   };
 }
@@ -69,19 +67,19 @@ export async function applyCommissionToWallet(
 export async function applyTopUpToWallet(
   adapter: WalletModelAdapter,
   fixerId: string,
-  amount: number
+  amount: number,
 ) {
-  if (!fixerId) throw new Error("FIXER_ID_REQUIRED");
+  if (!fixerId) throw new Error('FIXER_ID_REQUIRED');
   const a = Math.max(0, Number(amount || 0));
 
   const current = await adapter.getWalletById(fixerId);
-  if (!current) throw new Error("FIXER_NOT_FOUND");
+  if (!current) throw new Error('FIXER_NOT_FOUND');
 
   const pre = Number(current.balance ?? 0);
   const post = +(pre + a).toFixed(2);
   const thr = Number(current.lowBalanceThreshold ?? 0);
 
-    const { nextFlags, state, changed, crossed } = computeWalletFlags({
+  const { nextFlags, state, changed, crossed } = computeWalletFlags({
     preBalance: pre,
     postBalance: post,
     lowBalanceThreshold: thr,
