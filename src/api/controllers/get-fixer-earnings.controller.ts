@@ -35,18 +35,15 @@ export const getFixerEarnings = async (req: Request, res: Response) => {
       console.log("[getFixerEarnings] Usando fechas por defecto:", { fromDate, toDate });
     }
 
-    // Parsear fechas
-    const from = new Date(fromDate as string);
-    const to = new Date(toDate as string);
+    // Parsear fechas y ajustar para rango inclusivo
+    // Si el usuario pide del 22 al 28, buscamos del 22 00:00:00 al 28 23:59:59
+    const from = new Date((fromDate as string) + 'T00:00:00.000Z');
+    const to = new Date((toDate as string) + 'T23:59:59.999Z');
 
     // Validar que sean fechas válidas
     if (isNaN(from.getTime()) || isNaN(to.getTime())) {
       return res.status(400).json({ error: "Fechas inválidas" });
     }
-
-    // Ajustar las fechas para incluir el día completo
-    from.setHours(0, 0, 0, 0);
-    to.setHours(23, 59, 59, 999);
 
     // Validar orden de fechas
     if (from > to) {

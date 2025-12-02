@@ -65,6 +65,8 @@ app.use(
       'http://localhost:3000',
       'http://localhost:4000',
       'https://servineo-frontend-blush.vercel.app', 
+      'https://servineo-frontend-git-pruebaintegracion-diego-revollos-projects.vercel.app',
+      'https://servineo-frontend-cu4bgc4jl-diego-revollos-projects.vercel.app',
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
