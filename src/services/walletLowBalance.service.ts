@@ -1,6 +1,6 @@
 // servineo-backend/src/services/walletLowBalance.service.ts
 import type { ClientSession } from "mongoose";
-import { Wallet } from "../../models/wallet.model";
+import { Wallet } from "../models/wallet.model";
 
 interface LowBalanceParams {
   walletId: string;
