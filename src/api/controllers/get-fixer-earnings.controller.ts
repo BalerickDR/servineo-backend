@@ -36,7 +36,6 @@ export const getFixerEarnings = async (req: Request, res: Response) => {
     }
 
     // Parsear fechas y ajustar para rango inclusivo
-    // Si el usuario pide del 22 al 28, buscamos del 22 00:00:00 al 28 23:59:59
     const from = new Date((fromDate as string) + 'T00:00:00.000Z');
     const to = new Date((toDate as string) + 'T23:59:59.999Z');
 
@@ -66,25 +65,43 @@ export const getFixerEarnings = async (req: Request, res: Response) => {
       days: daysDiff 
     });
 
-    // ===== BUSCAR PAGOS PAID (CASH Y CARD) =====
-    // Usamos updatedAt porque es cuando se marcó como "paid"
-    const paidPayments = await Payment.find({
+    // ===== BUSCAR PAGOS PAID =====
+    // Query 1: Pagos CASH (tienen paymentMethods y amount es objeto)
+    const cashPayments = await Payment.find({
       fixerId: new mongoose.Types.ObjectId(fixerId),
       status: "paid",
+      paymentMethods: "cash",
       updatedAt: {
         $gte: from,
         $lte: to,
       },
-    }).select("amount.total paymentMethods updatedAt paidAt createdAt");
+    }).lean(); // Usamos .lean() para obtener objetos planos con todos los campos
+
+    // Query 2: Pagos CARD (NO tienen paymentMethods, tienen cardId y amount es número)
+    const cardPayments = await Payment.find({
+      fixerId: new mongoose.Types.ObjectId(fixerId),
+      status: "paid",
+      cardId: { $exists: true }, // Filtramos por la existencia de cardId
+      updatedAt: {
+        $gte: from,
+        $lte: to,
+      },
+    }).lean(); // Usamos .lean() para obtener objetos planos con todos los campos
+
+    // Combinar ambos resultados
+    const paidPayments = [...cashPayments, ...cardPayments];
 
     console.log(`[getFixerEarnings] Pagos PAID encontrados: ${paidPayments.length}`);
-
-    // Separar por tipo para estadísticas
-    const cashPayments = paidPayments.filter(p => p.paymentMethods === "cash");
-    const cardPayments = paidPayments.filter(p => p.paymentMethods === "card");
-
     console.log(`[getFixerEarnings] - Efectivo: ${cashPayments.length}`);
     console.log(`[getFixerEarnings] - Tarjeta: ${cardPayments.length}`);
+    
+    // DEBUG: Mostrar primeros pagos de cada tipo
+    if (cashPayments.length > 0) {
+      console.log("[DEBUG] Ejemplo pago CASH:", JSON.stringify(cashPayments[0]));
+    }
+    if (cardPayments.length > 0) {
+      console.log("[DEBUG] Ejemplo pago CARD:", JSON.stringify(cardPayments[0]));
+    }
 
     // ===== AGRUPAR POR DÍA =====
     const earningsByDay: { [key: string]: number } = {};
@@ -99,7 +116,18 @@ export const getFixerEarnings = async (req: Request, res: Response) => {
       // Usar updatedAt (cuando se marcó como paid) o paidAt como fallback
       const paymentDate = payment.paidAt || payment.updatedAt;
       const dateKey = formatDate(new Date(paymentDate));
-      const amount = payment.amount?.total || 0;
+      
+      // Determinar el monto según el tipo de pago
+      let amount = 0;
+      if (typeof payment.amount === 'object' && payment.amount !== null) {
+        // Esquema CASH: amount es objeto con { total: number }
+        amount = payment.amount?.total || 0;
+      } else {
+        // Esquema CARD: amount es número directo
+        amount = Number(payment.amount) || 0;
+      }
+      
+      console.log(`[getFixerEarnings] Procesando pago - Fecha: ${dateKey}, Amount: ${amount}, Tipo: ${typeof payment.amount}`);
       
       earningsByDay[dateKey] = (earningsByDay[dateKey] || 0) + amount;
     });
