@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import mongoose from "mongoose";
 import { MongoServerError } from 'mongodb'; // Del General: Para manejo de errores robusto
 import { Payment } from "../../models/payment.model";
-import User from "../../models/userPayment.model"; // Usamos la importación del General
+import User from "../../models/usersPayment.model"; // Usamos la importación del General
 import Jobspay from "../../models/jobs.model"; // 🟢 CRÍTICO: Mantenemos tu importación local
 
 // 🟢 Mantenemos TU tiempo de expiración (48h) en lugar del General (1h)
