@@ -1,3 +1,4 @@
+//src/app.ts
 import dotenv from 'dotenv';
 dotenv.config({ path: '.env' });
 
@@ -69,6 +70,8 @@ import PaymentsQrRoutes from './api/routes/paymentsQR.routes';
 // --- FEATURE FLAGS ---
 import { FEATURE_DEV_WALLET, FEATURE_SIM_PAYMENTS } from './models/featureFlags.model';
 
+
+
 const app = express();
 
 // --- CONFIGURACIÓN CORS ---
@@ -109,7 +112,8 @@ app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
   next();
 });
-
+//prueba para ver si era esto.
+app.use('/api/v1/invoices', invoiceDetailRouter);
 
 app.use('/api/fixer/payment-center', PaymentCenterRoutes); 
 app.use('/api/signUp', signUpRoutes);
@@ -162,7 +166,7 @@ app.use('/api/lab', CashPayRoutes);
 app.use('/api', rechargeWallet);
 app.use('/api', myJobsPaymentRoutes);
 app.use('/api/transferencia-bancaria', bankTransferRoutes);
-app.use('/api/v1/invoices', invoiceDetailRouter);
+//app.use('/api/v1/invoices', invoiceDetailRouter);
 app.use('/payments', paymentsRouter);
 app.use('/api/payments', PaymentsQrRoutes);
 app.use('/api', walletRoutes);
@@ -198,5 +202,9 @@ if (require.main === module) {
         console.log(`Servidor corriendo en puerto ${PORT}`);
     });
 }
+
+console.log('📌 Mounting invoice routes at /api/v1/invoices');
+app.use('/api/v1/invoices', invoiceDetailRouter);
+
 
 export default app;

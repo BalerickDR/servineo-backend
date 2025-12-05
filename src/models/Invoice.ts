@@ -1,4 +1,4 @@
-// src/Innosys/models/Invoice.ts
+// src/models/Invoice.ts
 import mongoose, { Document, Schema, Model } from 'mongoose';
 
 // Detalle de ítem
