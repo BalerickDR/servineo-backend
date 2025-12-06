@@ -56,7 +56,8 @@ import updateProfileRouter from '../src/api/routes/userManagement/updateProfile.
 import CardsRoutes from './api/routes/card.routes';
 import PaymentRoutes from './api/routes/payment.routes';
 import CashPayRoutes from './api/routes/cashpay.routes';
-import BankAccountRoutes from './api/routes/BankAccount.routes';
+// ⚠️ IMPORTANTE: Asegúrate que el nombre del archivo coincida (Mayúscula/Minúscula)
+import BankAccountRoutes from './api/routes/BankAccount.routes'; 
 import paymentsRouter from './api/routes/paymentsQR.routes';
 import PaymentCenterRoutes from './api/routes/paymentCenter.routes';
 import myJobsPaymentRoutes from './api/routes/jobsPayment.routes';
@@ -92,8 +93,13 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, origin || allowedOrigins[0]);
       } else {
+
+        console.log("Origen bloqueado por CORS:", origin);
+        callback(null, true); 
+
         console.log('Origen bloqueado por CORS:', origin);
         callback(null, true); // Permisivo temporalmente para evitar bloqueos en pruebas
+
       }
     },
     credentials: true,
@@ -111,18 +117,34 @@ app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
   next();
 });
+
+
+// ==================================================================
+// 🔥 ZONA DE PRIORIDAD ALTA (Rutas nuevas aquí) 🔥
+// ==================================================================
+
+console.log('📌 Mounting invoice routes at /api/v1/invoices');
+
 //prueba para ver si era esto.
 app.use('/api/lab', CashPayRoutes);
+
 app.use('/api/v1/invoices', invoiceDetailRouter);
+
+// ✅ AQUÍ ESTÁ EL CAMBIO CLAVE: Cargar cuentas bancarias ANTES que otras rutas
+console.log('👉 CARGANDO RUTAS DE CUENTAS BANCARIAS (Priority Load)...');
+app.use('/api', BankAccountRoutes); 
+
+// ==================================================================
+// 🔽 Resto de Rutas (Orden original)
+// ==================================================================
+
 app.use('/api', PaymentRoutes);
 app.use('/api', CardsRoutes);
 app.use('/api/fixer/payment-center', PaymentCenterRoutes);
 app.use('/api', rechargeWallet);
 app.use('/api', myJobsPaymentRoutes);
 app.use('/api/transferencia-bancaria', bankTransferRoutes);
-//app.use('/api/v1/invoices', invoiceDetailRouter);
 app.use('/api/payments', paymentsRouter);
-//app.use('/api/payments', PaymentsQrRoutes);
 app.use('/api', walletRoutes);
 app.use('/api/signUp', signUpRoutes);
 app.use('/devices', deviceRouter);
@@ -135,8 +157,13 @@ app.use('/api/newOffers', newoffersRoutes);
 app.use('/api/fixers', fixerRoutes);
 app.use('/api', activityRoutes);
 app.use('/api', jobsRoutes);
+
+app.use('/api', JobsRoutes);
+app.use('/api/job-offers', jobOfficial); 
+
 app.use('/api', JobsRoutes); // Nueva ruta para trabajos de pagos (No tocar)
 app.use('/api/job-offers', jobOfficial);
+
 app.use('/login', authRouter);
 app.use('/auth', githubAuthRouter);
 app.use('/auth', discordRoutes);
@@ -168,6 +195,11 @@ app.use('/api/admin', adminRouter);
 app.use('/api/admin', trackingRoutes);
 app.use('/api/admin/chart', chartRoutes);
 app.use('/', SudoersRouter);
+
+// app.use('/api', BankAccountRoutes); <--- (Borrado de aquí porque lo subimos)
+app.use('/api/lab', CashPayRoutes);
+
+
 app.use('/api', BankAccountRoutes);
 
 // Feature Flags (Rutas experimentales)
@@ -201,6 +233,11 @@ if (require.main === module) {
     console.log(`Servidor corriendo en puerto ${PORT}`);
   });
 }
+
+
+console.log('📌 Server Initialized');
+
+
 
 console.log('📌 Mounting invoice routes at /api/v1/invoices');
 app.use('/api/v1/invoices', invoiceDetailRouter);
