@@ -1,14 +1,13 @@
 // servineo-backend/src/api/controllers/confirm-payment.controller.ts
-import type { Request, Response } from "express";
-import mongoose from "mongoose";
-import { Payment } from "../../models/payment.model";
-import { Comision } from "../../models/historycomission.model";
-import { Wallet } from "../../models/wallet.model";
-import Job from "../../models/jobPayment.model";
-import User from "../../models/userPayment.model"; 
-import Jobspay from "../../models/jobs.model"; 
-import { updateWalletLowBalanceFlags } from "../../services/wallet.service";
-
+import type { Request, Response } from 'express';
+import mongoose from 'mongoose';
+import { Payment } from '../../models/payment.model';
+import { Comision } from '../../models/historycomission.model';
+import { Wallet } from '../../models/wallet.model';
+// import {Job} from "../../models/jobPayment.model";
+import User from '../../models/userPayment.model';
+import { Jobspay } from '../../models/jobsPayment.model';
+import { updateWalletLowBalanceFlags } from '../../services/walletLowBalance.service';
 
 const MAX_ATTEMPTS = 3;
 const LOCK_MINUTES = 10;
@@ -31,9 +30,9 @@ export async function confirmPaymentLab(req: Request, res: Response) {
 
     // 2. Definir 'provided'
     const provided = String(code).toUpperCase().trim();
-    
+
     if (!/^[A-Z0-9]{4,10}$/.test(provided)) {
-      return res.status(400).json({ error: "formato de código inválido" });
+      return res.status(400).json({ error: 'formato de código inválido' });
     }
 
     session.startTransaction();
@@ -45,7 +44,7 @@ export async function confirmPaymentLab(req: Request, res: Response) {
       return res.status(404).json({ error: 'pago no encontrado' });
     }
 
-    if (String(pay.status).toLowerCase() !== "pending") {
+    if (String(pay.status).toLowerCase() !== 'pending') {
       await session.abortTransaction();
       return res.status(400).json({ error: `el pago ya fue procesado` });
     }
@@ -53,7 +52,8 @@ export async function confirmPaymentLab(req: Request, res: Response) {
     // 3. Definir 'now' aquí para que esté disponible globalmente
     const now = new Date();
 
-    if (pay.codeExpiresAt && pay.codeExpiresAt.getTime() < now.getTime()) { // Usar 'now'
+    if (pay.codeExpiresAt && pay.codeExpiresAt.getTime() < now.getTime()) {
+      // Usar 'now'
       await session.abortTransaction();
       return res.status(410).json({
         error: 'código expirado',
@@ -65,7 +65,7 @@ export async function confirmPaymentLab(req: Request, res: Response) {
     if (pay.lockUntil && pay.lockUntil.getTime() > now.getTime()) {
       // ... (lógica de bloqueo)
       await session.abortTransaction(); // Abortar aquí también
-      return res.status(429).json({ error: "demasiados intentos fallidos" });
+      return res.status(429).json({ error: 'demasiados intentos fallidos' });
     }
 
     // Limpiar bloqueo si ya expiró
@@ -81,11 +81,11 @@ export async function confirmPaymentLab(req: Request, res: Response) {
       // ... (Lógica de intentos fallidos)
       const newAttempts = (pay.failedAttempts ?? 0) + 1;
       pay.failedAttempts = newAttempts;
-      
+
       if (newAttempts >= MAX_ATTEMPTS) {
         pay.lockUntil = new Date(now.getTime() + LOCK_MINUTES * 60 * 1000);
       }
-      
+
       await pay.save({ session });
       await session.commitTransaction(); // Guardar el intento fallido
 
@@ -101,12 +101,12 @@ export async function confirmPaymentLab(req: Request, res: Response) {
     const confirmedPayment = await Payment.findOneAndUpdate(
       {
         _id: id,
-        status: "pending", 
-        code: provided // <-- 'provided' AHORA SÍ existe
+        status: 'pending',
+        code: provided, // <-- 'provided' AHORA SÍ existe
       },
       {
         $set: {
-          status: "paid",
+          status: 'paid',
           paymentDate: now, // <-- 'now' AHORA SÍ existe
           failedAttempts: 0,
           lockUntil: null,
@@ -130,16 +130,17 @@ export async function confirmPaymentLab(req: Request, res: Response) {
     // (Movido antes de la factura, ya que 'jobActualizado' se usa en la respuesta)
     // ============================================
     let jobActualizado = false;
-    
-    if (confirmedPayment.jobId) { // <-- 5. Usar 'confirmedPayment'
+
+    if (confirmedPayment.jobId) {
+      // <-- 5. Usar 'confirmedPayment'
       try {
         console.log(`🔄 Actualizando status del job ${confirmedPayment.jobId} a "Pagado"`);
-        
+
         // 6. Usar 'Jobspay' (minúscula) como fue importado
-        const jobUpdated = await Jobspay.findByIdAndUpdate( 
+        const jobUpdated = await Jobspay.findByIdAndUpdate(
           confirmedPayment.jobId,
-          { $set: { status: "Pagado" } },
-          { new: true, session }
+          { $set: { status: 'Pagado' } },
+          { new: true, session },
         );
 
         if (jobUpdated) {
@@ -148,7 +149,7 @@ export async function confirmPaymentLab(req: Request, res: Response) {
         } else {
           console.warn(`⚠️ No se encontró el job ${confirmedPayment.jobId}`);
         }
-      } catch (jobError: any) {
+      } catch (jobError: unknown) {
         console.error(`❌ Error actualizando job ${confirmedPayment.jobId}:`, jobError);
       }
     } else {
@@ -163,37 +164,43 @@ export async function confirmPaymentLab(req: Request, res: Response) {
     try {
       // 1. Buscar los datos que faltan (Job y Requester/Payer)
       const [job, requester] = await Promise.all([
-        Job.findById(confirmedPayment.jobId).session(session), // Usar 'Job' (detallado)
-        User.findById(confirmedPayment.payerId).session(session)
+        Jobspay.findById(confirmedPayment.jobId).session(session), // Usar 'Job' (detallado)
+        User.findById(confirmedPayment.payerId).session(session),
       ]);
 
       if (!job || !requester) {
-        console.warn("⚠️ No se encontraron el Job o el Requester para la factura");
+        console.warn('⚠️ No se encontraron el Job o el Requester para la factura');
       } else {
         const subtotal = confirmedPayment.amount.total;
         const commission = subtotal * (confirmedPayment.commissionRate || 0.05);
-        const iva = (subtotal + commission) * 0.13; 
+        const iva = (subtotal + commission) * 0.13;
         const totalFinal = subtotal + commission + iva;
 
-        await Payment.findByIdAndUpdate(confirmedPayment._id, {
-          $set: {
-            requesterName: requester.name,
-            companyName: (requester as any).companyName || "N/A",
-            taxId: (requester as any).taxId || "N/A",
-            jobType: job.type, 
-            jobDescription: job.description, 
-            transactionId: `CASH-${confirmedPayment._id}`, 
-            "Payment Method": "Efectivo", 
-            commission: commission,
-            iva: iva,
-            "amount.total": totalFinal 
-          }
-        }, { session });
+        await Payment.findByIdAndUpdate(
+          confirmedPayment._id,
+          {
+            $set: {
+              requesterName: requester.name,
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              companyName: (requester as any).companyName || 'N/A',
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              taxId: (requester as any).taxId || 'N/A',
+              jobType: job.type,
+              jobDescription: job.description,
+              transactionId: `CASH-${confirmedPayment._id}`,
+              'Payment Method': 'Efectivo',
+              commission: commission,
+              iva: iva,
+              'amount.total': totalFinal,
+            },
+          },
+          { session },
+        );
 
         console.log(`✅ Datos de factura añadidos al pago ${confirmedPayment._id}`);
       }
-    } catch (invoiceError: any) {
-      console.error("❌ Error en trigger de facturación:", invoiceError.message);
+    } catch (invoiceError: unknown) {
+      console.error('❌ Error en trigger de facturación:', (invoiceError as Error).message);
     }
     // ============================================
     // FIN DE LÓGICA DE FACTURACIÓN
@@ -204,12 +211,12 @@ export async function confirmPaymentLab(req: Request, res: Response) {
     // ============================================
     try {
       console.log(`🧾 Actualizando estado en 'jobspays' para el jobId: ${confirmedPayment.jobId}`);
-      
+
       // ¡USA EL MODELO 'Jobspay' (jobs.model.ts) PARA ACTUALIZAR LA LISTA!
-      await Jobspay.findByIdAndUpdate( 
+      await Jobspay.findByIdAndUpdate(
         confirmedPayment.jobId,
-        { $set: { status: "Pagado" } }, // Asumiendo que 'Pagado' es el string correcto
-        { session }
+        { $set: { status: 'Pagado' } }, // Asumiendo que 'Pagado' es el string correcto
+        { session },
       );
       console.log(`✅ 'jobspays' actualizado a "Pagado".`);
     } catch (jobspayError: unknown) {
@@ -225,8 +232,8 @@ export async function confirmPaymentLab(req: Request, res: Response) {
     console.log(`💰 Activando trigger de comisión para pago ${id}`);
 
     try {
-      const fixerWallet = await Wallet.findOne({ 
-        users_id: confirmedPayment.fixerId 
+      const fixerWallet = await Wallet.findOne({
+        users_id: confirmedPayment.fixerId,
       }).session(session);
 
       if (!fixerWallet) {
@@ -245,7 +252,7 @@ export async function confirmPaymentLab(req: Request, res: Response) {
         await Wallet.findByIdAndUpdate(
           fixerWallet._id,
           { $inc: { balance: -comisionMonto } }, // <-- Siempre descuenta
-          { session }
+          { session },
         );
         console.log(`✅ Comisión de ${comisionMonto} Bs descontada del wallet`);
         //actualizar flags de saldo bajo / crítico
@@ -260,15 +267,15 @@ export async function confirmPaymentLab(req: Request, res: Response) {
             lowBalanceThreshold: fixerWallet.lowBalanceThreshold,
             session,
           });
-        } catch (flagsError: any) {
+        } catch (flagsError: unknown) {
           console.error(
-            "❌ Error actualizando flags de saldo bajo en wallet:",
-            flagsError.message,
+            '❌ Error actualizando flags de saldo bajo en wallet:',
+            (flagsError as Error).message,
           );
         }
       } else {
-        estadoComision = "fallida";
-        motivoFallo = "Wallet del fixer no encontrado";
+        estadoComision = 'fallida';
+        motivoFallo = 'Wallet del fixer no encontrado';
         console.warn(`❌ ${motivoFallo}`);
       }
 
@@ -298,7 +305,7 @@ export async function confirmPaymentLab(req: Request, res: Response) {
 
     console.info(`Payment ${id}: confirmado exitosamente + triggers ejecutados`);
 
-    const finalPaymentDoc = await Payment.findById(id).lean();
+    //const finalPaymentDoc = await Payment.findById(id).lean();
 
     return res.json({
       message: 'pago confirmado exitosamente',
@@ -308,9 +315,9 @@ export async function confirmPaymentLab(req: Request, res: Response) {
         status: confirmedPayment.status,
         paidAt: confirmedPayment.paymentDate,
         comisionProcesada: true,
-        jobActualizado: jobActualizado, 
-        jobId: confirmedPayment.jobId || null
-      }
+        jobActualizado: jobActualizado,
+        jobId: confirmedPayment.jobId || null,
+      },
     });
   } catch (e: unknown) {
     if (session.inTransaction()) {
@@ -322,11 +329,11 @@ export async function confirmPaymentLab(req: Request, res: Response) {
       stack: (e as Error).stack,
       paymentId: req.params.id,
     });
-    
+
     // ... (Manejo de errores) ...
-    return res.status(500).json({ 
-      error: "error del servidor al procesar el pago",
-      ...(process.env.NODE_ENV === 'development' && { details: e.message })
+    return res.status(500).json({
+      error: 'error del servidor al procesar el pago',
+      ...(process.env.NODE_ENV === 'development' && { details: (e as Error).message }),
     });
   } finally {
     session.endSession();

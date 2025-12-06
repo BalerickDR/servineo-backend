@@ -1,7 +1,7 @@
 // src/api/services/wallet/lowBalance.service.ts
 import { ClientSession } from 'mongoose';
-import WalletModel from '../../models/wallet.model';
-import NotificationModel from '../../models/Notification.model'; // tu colección de notificaciones
+import { Wallet as WalletModel } from '../../models/wallet.model';
+// import NotificationModel from '../../models/Notification.model'; // tu colección de notificaciones
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const SEVEN_DAYS_MS = 7 * ONE_DAY_MS;
@@ -20,30 +20,35 @@ async function createLowBalanceNotification(
   const sevenDaysAgo = new Date(now.getTime() - SEVEN_DAYS_MS);
 
   // Máximo 3 notificaciones en 7 días
-  const sentLast7Days = await NotificationModel.countDocuments({
-    userId,
-    type: 'wallet_low_balance',
-    createdAt: { $gte: sevenDaysAgo },
-  }).session(session || null);
+  // TODO: Uncomment when NotificationModel is available
+  // const sentLast7Days = await NotificationModel.countDocuments({
+  //   userId,
+  //   type: 'wallet_low_balance',
+  //   createdAt: { $gte: sevenDaysAgo },
+  // }).session(session || null);
 
-  if (sentLast7Days >= 3) {
-    return;
-  }
+  // if (sentLast7Days >= 3) {
+  //   return;
+  // }
 
-  await NotificationModel.create(
-    [
-      {
-        userId,
-        type: 'wallet_low_balance',
-        channel: ['in_app', 'email', 'push'], // o lo que uses
-        status: 'sent',
-        meta: {
-          level, // "low" | "critical"
-          postBalance,
-        },
-      },
-    ],
-    { session },
+  // await NotificationModel.create(
+  //   [
+  //     {
+  //       userId,
+  //       type: 'wallet_low_balance',
+  //       channel: ['in_app', 'email', 'push'], // o lo que uses
+  //       status: 'sent',
+  //       meta: {
+  //         level, // "low" | "critical"
+  //         postBalance,
+  //       },
+  //     },
+  //   ],
+  //   { session },
+  // );
+
+  console.log(
+    `TODO: Send notification for userId ${userId}, level: ${level}, balance: ${postBalance}`,
   );
 }
 
@@ -95,9 +100,7 @@ export async function handleCommissionApplied(
   // 3. post <= 0 ⇒ posible disparo de notificación
   const wasHealthyBefore = preBalance > 0;
 
-  const cooldownUntil = wallet.flags?.cooldownUntil
-    ? new Date(wallet.flags.cooldownUntil)
-    : null;
+  const cooldownUntil = wallet.flags?.cooldownUntil ? new Date(wallet.flags.cooldownUntil) : null;
   const cooldownPassed = !cooldownUntil || now >= cooldownUntil;
 
   // Condición de tu diagrama:

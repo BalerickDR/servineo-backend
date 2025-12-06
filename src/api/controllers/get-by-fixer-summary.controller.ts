@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { Payment } from '../../models/payment.model';
-import { User } from '../../models/usersPayment.model';
+import User from '../../models/usersPayment.model';
 
 // 1. Definimos la interfaz de lo que devuelve tu consulta .select()
 interface PaymentDoc {

@@ -1,4 +1,5 @@
 //pasar a jhasseft
+import type { Request, Response } from 'express';
 import PaymentIntent from '../../models/PaymentIntent.model';
 import ProviderPaymentMethod from '../../models/ProviderPaymentMethod.model';
 const SERVINEO_PROVIDER_ID = 'prov_123';
@@ -16,7 +17,7 @@ export async function createOrReuseIntent(req: Request, res: Response) {
   try {
     console.log('📩 Body recibido:', req.body);
 
-    const { fixerId, amount, currency = 'BOB', deadlineMinutes = 60 } = req.body ?? {};
+    const { fixerId, amount, currency = 'BOB', deadlineMinutes = 60 } = (req.body as any) ?? {};
 
     if (!fixerId) {
       return res.status(400).json({

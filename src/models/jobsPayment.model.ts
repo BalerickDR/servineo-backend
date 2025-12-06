@@ -16,5 +16,5 @@ const jobSchema = new mongoose.Schema({
   type: String,
 });
 
-export const User = mongoose.models.User || mongoose.model("jobspays", jobSchema);
-
+export const Jobspay = mongoose.models.Jobspay || mongoose.model('jobspays', jobSchema);
+export default Jobspay;

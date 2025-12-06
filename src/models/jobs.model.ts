@@ -1,4 +1,17 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
+
+export interface IJob extends mongoose.Document {
+  title: string;
+  description: string;
+  status: string;
+  requesterId: string;
+  fixerId: string;
+  price: number;
+  createdAt: Date;
+  rating?: number;
+  comment?: string;
+  type: string;
+}
 
 const JobSchema = new mongoose.Schema({
   title: String,

@@ -6,6 +6,7 @@ import Card from '../../models/card.model';
 import { User } from '../../models/user.model';
 import Job from '../../models/jobs.model';
 import 'dotenv/config';
+import type { Request, Response } from 'express';
 import axios from 'axios'; // 🆕 Importar axios (o node-fetch si no usas axios)
 
 // Claves de Stripe

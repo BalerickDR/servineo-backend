@@ -1,10 +1,10 @@
-import { Schema, model, models, Document, Types } from "mongoose";
+import { Schema, model, models, Document, Types } from 'mongoose';
 
 export interface IUser extends Document {
   name: string;
   email: string;
   url_photo?: string;
-  description?: string; 
+  description?: string;
   role: string;
 
   authProviders?: Array<{
@@ -70,8 +70,8 @@ const userSchema = new Schema<IUser>(
 
     role: {
       type: String,
-      enum: ["requester", "fixer", "visitor", "admin"],
-      default: "requester",
+      enum: ['requester', 'fixer', 'visitor', 'admin'],
+      default: 'requester',
     },
 
     authProviders: [
@@ -120,43 +120,16 @@ const userSchema = new Schema<IUser>(
       pais: { type: String },
     },
 
-    ci: { type: String },
-
-    servicios: [{ type: String }],
-
-    vehiculo: {
-      hasVehiculo: { type: Boolean },
-      tipoVehiculo: { type: String },
-    },
-
-    acceptTerms: { type: Boolean, default: false },
-
-    fixerProfile: { type: String, required: false },
-
-    metodoPago: {
-      hasEfectivo: { type: Boolean, default: false },
-      qr: { type: Boolean, default: false },
-      tarjetaCredito: { type: Boolean, default: false },
-    },
-
     experience: {
       descripcion: { type: String },
-    },
-
-    workLocation: {
-      lat: { type: Number },
-      lng: { type: Number },
-      direccion: { type: String },
-      departamento: { type: String },
-      pais: { type: String },
     },
 
     stripeCustomerId: { type: String }, // ⚡ Agregado
   },
   {
-    collection: "users",
+    collection: 'users',
     timestamps: true,
-  }
+  },
 );
 
-export const User = models.User || model<IUser>("User", userSchema);
+export const User = models.User || model<IUser>('User', userSchema);
