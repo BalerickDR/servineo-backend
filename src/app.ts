@@ -49,8 +49,8 @@ import ingresar2faRouter from './api/routes/userManagement/ingresar2fa.routes';
 import codigos2faRouter from './api/routes/userManagement/codigos2fa.routes';
 import twoFaRouter from './api/routes/userManagement/2fa.routes';
 import signUpRoutes from './api/routes/userManagement/signUp.routes';
-import deleteAccountRoutes from "../src/api/routes/userManagement/deleteAccount.routes";
-import updateProfileRouter from "../src/api/routes/userManagement/updateProfile.routes";
+import deleteAccountRoutes from '../src/api/routes/userManagement/deleteAccount.routes';
+import updateProfileRouter from '../src/api/routes/userManagement/updateProfile.routes';
 
 // --- RUTAS DE PAGOS Y BILLETERA ---
 import CardsRoutes from './api/routes/card.routes';
@@ -70,8 +70,6 @@ import PaymentsQrRoutes from './api/routes/paymentsQR.routes';
 
 // --- FEATURE FLAGS ---
 import { FEATURE_DEV_WALLET, FEATURE_SIM_PAYMENTS } from './models/featureFlags.model';
-
-
 
 const app = express();
 
@@ -94,7 +92,7 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, origin || allowedOrigins[0]);
       } else {
-        console.log("Origen bloqueado por CORS:", origin);
+        console.log('Origen bloqueado por CORS:', origin);
         callback(null, true); // Permisivo temporalmente para evitar bloqueos en pruebas
       }
     },
@@ -114,10 +112,11 @@ app.use((req, res, next) => {
   next();
 });
 //prueba para ver si era esto.
+app.use('/api/lab', CashPayRoutes);
 app.use('/api/v1/invoices', invoiceDetailRouter);
 app.use('/api', PaymentRoutes);
 app.use('/api', CardsRoutes);
-app.use('/api/fixer/payment-center', PaymentCenterRoutes); 
+app.use('/api/fixer/payment-center', PaymentCenterRoutes);
 app.use('/api', rechargeWallet);
 app.use('/api', myJobsPaymentRoutes);
 app.use('/api/transferencia-bancaria', bankTransferRoutes);
@@ -136,8 +135,8 @@ app.use('/api/newOffers', newoffersRoutes);
 app.use('/api/fixers', fixerRoutes);
 app.use('/api', activityRoutes);
 app.use('/api', jobsRoutes);
-app.use('/api', JobsRoutes);// Nueva ruta para trabajos de pagos (No tocar)
-app.use('/api/job-offers', jobOfficial); 
+app.use('/api', JobsRoutes); // Nueva ruta para trabajos de pagos (No tocar)
+app.use('/api/job-offers', jobOfficial);
 app.use('/login', authRouter);
 app.use('/auth', githubAuthRouter);
 app.use('/auth', discordRoutes);
@@ -160,18 +159,16 @@ app.use('/api/controlC/foto-perfil', fotoPerfilRouter);
 app.use('/api/controlC/obtener-password', obtenerContrasenaRouter);
 app.use('/api/controlC/cliente', clienteRouter);
 app.use('/api/controlC/usuario/update', updateProfileRouter);
-app.use("/api/controlC/usuario", deleteAccountRoutes);
+app.use('/api/controlC/usuario', deleteAccountRoutes);
 app.use('/api/controlC/sesion2fa', sesion2faRouter);
 app.use('/api/controlC/2fa-ingresar', ingresar2faRouter);
 app.use('/api/controlC/codigos2fa', codigos2faRouter);
 app.use('/api/controlC/2fa', twoFaRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/admin', trackingRoutes);
-app.use("/api/admin/chart", chartRoutes);
+app.use('/api/admin/chart', chartRoutes);
 app.use('/', SudoersRouter);
 app.use('/api', BankAccountRoutes);
-app.use('/api/lab', CashPayRoutes);
-
 
 // Feature Flags (Rutas experimentales)
 console.log('FEATURE_DEV_WALLET =', FEATURE_DEV_WALLET);
@@ -183,7 +180,7 @@ if (FEATURE_SIM_PAYMENTS) {
   app.use('/api/sim', simPaymentsRouter);
 }
 
-// Función exportada para registrar dispositivos 
+// Función exportada para registrar dispositivos
 export const registerRoutes = (app: any) => {
   app.use('/devices', deviceRouter);
 };
@@ -200,13 +197,12 @@ app.use((req, res) => {
 const PORT = process.env.SERVER_PORT || 8000;
 
 if (require.main === module) {
-    app.listen(PORT, () => {
-        console.log(`Servidor corriendo en puerto ${PORT}`);
-    });
+  app.listen(PORT, () => {
+    console.log(`Servidor corriendo en puerto ${PORT}`);
+  });
 }
 
 console.log('📌 Mounting invoice routes at /api/v1/invoices');
 app.use('/api/v1/invoices', invoiceDetailRouter);
-
 
 export default app;
