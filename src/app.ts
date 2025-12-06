@@ -28,7 +28,6 @@ import forumRoutes from './api/routes/forum.routes';
 import faqRoutes from './api/routes/faq.routes';
 import captchaRoutes from './api/routes/captcha.routes';
 
-// --- RUTAS DE GESTIÓN DE USUARIOS (CONTROL C) ---
 import registrarDatosRouter from '../src/api/routes/userManagement/registrarDatos.routes';
 import fotoPerfilRouter from '../src/api/routes/userManagement/fotoPerfil.routes';
 import googleRouter from '../src/api/routes/userManagement/google.routes';
@@ -52,7 +51,6 @@ import signUpRoutes from './api/routes/userManagement/signUp.routes';
 import deleteAccountRoutes from '../src/api/routes/userManagement/deleteAccount.routes';
 import updateProfileRouter from '../src/api/routes/userManagement/updateProfile.routes';
 
-// --- RUTAS DE PAGOS Y BILLETERA ---
 import CardsRoutes from './api/routes/card.routes';
 import PaymentRoutes from './api/routes/payment.routes';
 import CashPayRoutes from './api/routes/cashpay.routes';
@@ -91,8 +89,8 @@ app.use(
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, origin || allowedOrigins[0]);
       } else {
-        console.log('Origen bloqueado por CORS:', origin);
-        callback(null, true); // Permisivo temporalmente
+        console.log('Origen bloqueado por CORS (Permitido Temporalmente):', origin);
+        callback(null, true); // Permisivo temporalmente para evitar bloqueos en pruebas
       }
     },
     credentials: true,
@@ -114,6 +112,7 @@ app.use((req, res, next) => {
 app.use('/api/fixer/payment-center', PaymentCenterRoutes);
 app.use('/api/lab', CashPayRoutes);
 app.use('/api/v1/invoices', invoiceDetailRouter);
+app.use('/api', BankAccountRoutes);
 
 app.use('/api', PaymentRoutes);
 app.use('/api', CardsRoutes);
@@ -121,9 +120,7 @@ app.use('/api', rechargeWallet);
 app.use('/api', myJobsPaymentRoutes);
 app.use('/api/transferencia-bancaria', bankTransferRoutes);
 app.use('/api/payments', paymentsRouter);
-// app.use('/api/payments', PaymentsQrRoutes); // Duplicado con paymentsRouter? Revisa cual usar
 app.use('/api', walletRoutes);
-app.use('/api', BankAccountRoutes);
 
 app.use('/api/signUp', signUpRoutes);
 app.use('/devices', deviceRouter);
@@ -131,6 +128,7 @@ app.use('/api', searchRoutes);
 app.use('/api', forumRoutes);
 app.use('/api', faqRoutes);
 app.use('/', captchaRoutes);
+
 app.use('/api/devmaster', jobOfertRoutes);
 app.use('/api/newOffers', newoffersRoutes);
 app.use('/api/fixers', fixerRoutes);
@@ -164,6 +162,7 @@ app.use('/api/controlC/cliente', clienteRouter);
 app.use('/api/controlC/usuario/update', updateProfileRouter);
 app.use('/api/controlC/usuario', deleteAccountRoutes);
 
+// Seguridad y Admin
 app.use('/api/controlC/sesion2fa', sesion2faRouter);
 app.use('/api/controlC/2fa-ingresar', ingresar2faRouter);
 app.use('/api/controlC/codigos2fa', codigos2faRouter);
@@ -205,6 +204,6 @@ if (require.main === module) {
   });
 }
 
-console.log('📌 Mounting invoice routes at /api/v1/invoices');
+console.log('📌 Server Initialized and Routes Mounted');
 
 export default app;
