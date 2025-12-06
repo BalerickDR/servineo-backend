@@ -52,8 +52,6 @@ import signUpRoutes from './api/routes/userManagement/signUp.routes';
 import deleteAccountRoutes from '../src/api/routes/userManagement/deleteAccount.routes';
 import updateProfileRouter from '../src/api/routes/userManagement/updateProfile.routes';
 
-import notificationRoutes from './modules/notifications/notification.routes';
-
 // --- RUTAS DE PAGOS Y BILLETERA ---
 import CardsRoutes from './api/routes/card.routes';
 import PaymentRoutes from './api/routes/payment.routes';
@@ -66,7 +64,6 @@ import invoiceDetailRouter from './api/routes/invoice.routes';
 import bankTransferRoutes from './api/routes/bankTransfer.routes';
 import rechargeWallet from './api/routes/wallet.routes';
 import walletRoutes from './api/routes/wallet.routes';
-import PaymentsQrRoutes from './api/routes/paymentsQR.routes';
 
 // --- FEATURE FLAGS ---
 import { devWalletRouter } from './api/routes/dev-wallet.routes';
@@ -114,17 +111,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// 1. RUTAS PRIORITARIAS (Para evitar Shadowing / 404s)
-// Estas rutas específicas van antes que las genéricas de /api
 app.use('/api/fixer/payment-center', PaymentCenterRoutes);
 app.use('/api/lab', CashPayRoutes);
 app.use('/api/v1/invoices', invoiceDetailRouter);
 
-// 2. NUEVAS RUTAS (De la fusión)
-// app.use('/api/editProfile', editProfileRoutes); // Descomenta si tienes el import
-app.use('/api/notifications', notificationRoutes);
-
-// 3. RUTAS DE BILLETERA Y PAGOS
 app.use('/api', PaymentRoutes);
 app.use('/api', CardsRoutes);
 app.use('/api', rechargeWallet);
@@ -135,7 +125,6 @@ app.use('/api/payments', paymentsRouter);
 app.use('/api', walletRoutes);
 app.use('/api', BankAccountRoutes);
 
-// 4. RUTAS GENERALES Y DE USUARIO
 app.use('/api/signUp', signUpRoutes);
 app.use('/devices', deviceRouter);
 app.use('/api', searchRoutes);
@@ -150,7 +139,6 @@ app.use('/api', jobsRoutes);
 app.use('/api', JobsRoutes);
 app.use('/api/job-offers', jobOfficial);
 
-// Auth y Perfiles
 app.use('/login', authRouter);
 app.use('/auth', githubAuthRouter);
 app.use('/auth', discordRoutes);
@@ -161,7 +149,6 @@ app.use('/api/experiences', experienceRoutes);
 app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/certifications', certificationRoutes);
 
-// Control C / Gestión
 app.use('/api/controlC/google', googleRouter);
 app.use('/api/controlC/ubicacion', ubicacionRouter);
 app.use('/api/controlC/auth', authRouter);
@@ -177,7 +164,6 @@ app.use('/api/controlC/cliente', clienteRouter);
 app.use('/api/controlC/usuario/update', updateProfileRouter);
 app.use('/api/controlC/usuario', deleteAccountRoutes);
 
-// Seguridad y Admin
 app.use('/api/controlC/sesion2fa', sesion2faRouter);
 app.use('/api/controlC/2fa-ingresar', ingresar2faRouter);
 app.use('/api/controlC/codigos2fa', codigos2faRouter);
