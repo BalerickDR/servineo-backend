@@ -1,20 +1,24 @@
 import mongoose from 'mongoose';
 
-const jobSchema = new mongoose.Schema({
-  title: String,
-  description: String,
-  status: String,
-  requesterId: String,
-  fixerId: String,
-  price: Number,
-  createdAt: {
-    type: Date,
-    default: Date.now,
+const jobSchema = new mongoose.Schema(
+  {
+    title: String,
+    description: String,
+    status: String,
+    requesterId: String,
+    fixerId: String,
+    price: Number,
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+    rating: Number,
+    comment: String,
+    type: String,
   },
-  rating: Number,
-  comment: String,
-  type: String,
-});
+  {
+    collection: 'jobspays',
+  },
+);
 
-export const Jobspay = mongoose.models.Jobspay || mongoose.model('jobspays', jobSchema);
-export default Jobspay;
+export const Job = mongoose.models.Job || mongoose.model('Job', jobSchema);
