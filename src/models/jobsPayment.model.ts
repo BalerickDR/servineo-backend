@@ -1,20 +1,25 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const jobSchema = new mongoose.Schema({
-  title: String,
-  description: String,
-  status: String,
-  requesterId: String,
-  fixerId: String,
-  price: Number,
-  createdAt: {
-    type: Date,
-    default: Date.now,
+const jobSchema = new mongoose.Schema(
+  {
+    title: String,
+    description: String,
+    status: String,
+    requesterId: String,
+    fixerId: String,
+    price: Number,
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+    rating: Number,
+    comment: String,
+    type: String,
   },
-  rating: Number,
-  comment: String,
-  type: String,
-});
+  {
+    collection: "jobspays",
+  }
+);
 
-export const User = mongoose.models.User || mongoose.model("jobspays", jobSchema);
-
+export const Job =
+  mongoose.models.Job || mongoose.model("Job", jobSchema);

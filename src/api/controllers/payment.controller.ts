@@ -95,12 +95,12 @@ export const createPayment = async (req, res) => {
     ]);
 
     if (!requester) {
-      console.error(`❌ Requester ${requesterId} no encontrado`);
+      console.error(` Requester ${requesterId} no encontrado`);
       return res.status(404).json({ error: "Requester no encontrado" });
     }
 
     if (!fixer) {
-      console.error(`❌ Fixer ${fixerId} no encontrado`);
+      console.error(` Fixer ${fixerId} no encontrado`);
       return res.status(404).json({ error: "Fixer no encontrado" });
     }
 

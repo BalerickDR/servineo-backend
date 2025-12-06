@@ -1,16 +1,16 @@
-import { Schema, model, models, Document, Types } from "mongoose";
+import { Schema, model, models, Document } from "mongoose";
 
 export interface IUser extends Document {
   name: string;
   email: string;
   url_photo?: string;
-  description?: string; 
+  description?: string;
   role: string;
 
   authProviders?: Array<{
     provider: string;
     providerId: string;
-    password: string;
+    password?: string;
   }>;
 
   telefono?: string;
@@ -30,6 +30,7 @@ export interface IUser extends Document {
     hasVehiculo?: boolean;
     tipoVehiculo?: string;
   };
+
   fixerProfile?: string;
   acceptTerms?: boolean;
 
@@ -51,7 +52,7 @@ export interface IUser extends Document {
     pais?: string;
   };
 
-  stripeCustomerId?: string; // ⚡ Campo nuevo para Stripe
+  stripeCustomerId?: string;
 }
 
 const userSchema = new Schema<IUser>(
@@ -78,60 +79,33 @@ const userSchema = new Schema<IUser>(
       {
         provider: { type: String, required: true },
         providerId: { type: String, required: true },
-        password: { type: String, required: false },
+        password: { type: String },
       },
     ],
 
     telefono: { type: String },
 
     ubicacion: {
-      lat: { type: Number },
-      lng: { type: Number },
-      direccion: { type: String },
-      departamento: { type: String },
-      pais: { type: String },
+      lat: Number,
+      lng: Number,
+      direccion: String,
+      departamento: String,
+      pais: String,
     },
 
-    ci: { type: String },
-    description: { type: String },
+    ci: String,
+    description: String,
 
-    servicios: [{ type: String }],
+    servicios: [String],
 
     vehiculo: {
-      hasVehiculo: { type: Boolean },
-      tipoVehiculo: { type: String },
+      hasVehiculo: Boolean,
+      tipoVehiculo: String,
     },
 
     acceptTerms: { type: Boolean, default: false },
 
-    fixerProfile: { type: String, required: false },
-
-    metodoPago: {
-      hasEfectivo: { type: Boolean, default: false },
-      qr: { type: Boolean, default: false },
-      tarjetaCredito: { type: Boolean, default: false },
-    },
-
-    workLocation: {
-      lat: { type: Number },
-      lng: { type: Number },
-      direccion: { type: String },
-      departamento: { type: String },
-      pais: { type: String },
-    },
-
-    ci: { type: String },
-
-    servicios: [{ type: String }],
-
-    vehiculo: {
-      hasVehiculo: { type: Boolean },
-      tipoVehiculo: { type: String },
-    },
-
-    acceptTerms: { type: Boolean, default: false },
-
-    fixerProfile: { type: String, required: false },
+    fixerProfile: String,
 
     metodoPago: {
       hasEfectivo: { type: Boolean, default: false },
@@ -140,18 +114,18 @@ const userSchema = new Schema<IUser>(
     },
 
     experience: {
-      descripcion: { type: String },
+      descripcion: String,
     },
 
     workLocation: {
-      lat: { type: Number },
-      lng: { type: Number },
-      direccion: { type: String },
-      departamento: { type: String },
-      pais: { type: String },
+      lat: Number,
+      lng: Number,
+      direccion: String,
+      departamento: String,
+      pais: String,
     },
 
-    stripeCustomerId: { type: String }, // ⚡ Agregado
+    stripeCustomerId: String,
   },
   {
     collection: "users",

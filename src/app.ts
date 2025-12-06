@@ -6,6 +6,7 @@ import express from 'express';
 import cors from 'cors';
 
 // --- RUTAS DE LA APP PRINCIPAL ---
+import JobsRoutes from './api/routes/jobsPayment.routes';
 import jobOfertRoutes from './api/routes/jobOfert.routes';
 import newoffersRoutes from './api/routes/newOffers.routes';
 import fixerRoutes from './api/routes/fixer.routes';
@@ -114,8 +115,16 @@ app.use((req, res, next) => {
 });
 //prueba para ver si era esto.
 app.use('/api/v1/invoices', invoiceDetailRouter);
-
+app.use('/api', PaymentRoutes);
+app.use('/api', CardsRoutes);
 app.use('/api/fixer/payment-center', PaymentCenterRoutes); 
+app.use('/api', rechargeWallet);
+app.use('/api', myJobsPaymentRoutes);
+app.use('/api/transferencia-bancaria', bankTransferRoutes);
+//app.use('/api/v1/invoices', invoiceDetailRouter);
+app.use('/api/payments', paymentsRouter);
+//app.use('/api/payments', PaymentsQrRoutes);
+app.use('/api', walletRoutes);
 app.use('/api/signUp', signUpRoutes);
 app.use('/devices', deviceRouter);
 app.use('/api', searchRoutes);
@@ -127,6 +136,7 @@ app.use('/api/newOffers', newoffersRoutes);
 app.use('/api/fixers', fixerRoutes);
 app.use('/api', activityRoutes);
 app.use('/api', jobsRoutes);
+app.use('/api', JobsRoutes);// Nueva ruta para trabajos de pagos (No tocar)
 app.use('/api/job-offers', jobOfficial); 
 app.use('/login', authRouter);
 app.use('/auth', githubAuthRouter);
@@ -159,17 +169,9 @@ app.use('/api/admin', adminRouter);
 app.use('/api/admin', trackingRoutes);
 app.use("/api/admin/chart", chartRoutes);
 app.use('/', SudoersRouter);
-app.use('/api', CardsRoutes);
-app.use('/api', PaymentRoutes);
 app.use('/api', BankAccountRoutes);
 app.use('/api/lab', CashPayRoutes);
-app.use('/api', rechargeWallet);
-app.use('/api', myJobsPaymentRoutes);
-app.use('/api/transferencia-bancaria', bankTransferRoutes);
-//app.use('/api/v1/invoices', invoiceDetailRouter);
-app.use('/payments', paymentsRouter);
-app.use('/api/payments', PaymentsQrRoutes);
-app.use('/api', walletRoutes);
+
 
 // Feature Flags (Rutas experimentales)
 console.log('FEATURE_DEV_WALLET =', FEATURE_DEV_WALLET);

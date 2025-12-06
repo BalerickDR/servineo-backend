@@ -21,10 +21,10 @@ export const createCard = async (req: Request, res: Response) => {
     console.log(`🔍 Buscando usuario con ID: ${userId}`);
     const user = await User.findById(userId);
     if (!user) {
-      console.log("❌ Usuario no encontrado");
-      return res.status(404).json({ error: "User not found" });
+      console.log(" Usuario no encontrado");
+      return res.status(200).json({ error: "User not found" });
     }
-    console.log("✅ Usuario encontrado:", { email: user.email, name: user.name, stripeCustomerId: user.stripeCustomerId });
+    console.log(" Usuario encontrado:", { email: user.email, name: user.name, stripeCustomerId: user.stripeCustomerId });
 
     let customerId = user.stripeCustomerId;
 
@@ -99,7 +99,7 @@ export const listCards = async (req: Request, res: Response) => {
     console.log("➡️ listCards called with query:", req.query);
     const { userId } = req.query;
     if (!userId) {
-      return res.status(400).json({ error: 'userId es requerido' });
+      return res.status(200).json({ error: 'userId es requerido' });
     }
 
     const cards = await Card.find({ userId });
